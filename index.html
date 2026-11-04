@@ -5,60 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Карта настроения</title>
 <style>
-:root{--bg:#f6f4ef;--card:#fff;--tx:#1f2328;--mut:#6b7280;--acc:#5b5bd6;--bd:#e3e0d8;--danger:#b3372f}
-@media (prefers-color-scheme:dark){:root{--bg:#15161a;--card:#1f2127;--tx:#eceef2;--mut:#9aa1ad;--acc:#8b8bf0;--bd:#2d3037;--danger:#ff8a80}}
-*{box-sizing:border-box}
+:root{--bg:#f1eff8;--card:#ffffff;--tx:#17141f;--mut:#756f86;--acc:#6c5ce7;--bd:#e4e0f0;--danger:#d63c3c;--glass:rgba(255,255,255,.82);--tile:#f1eff8}
+@media (prefers-color-scheme:dark){:root{--bg:#14121c;--card:#1c1a26;--tx:#f4f2fb;--mut:#a29cb8;--acc:#9d8cff;--bd:#2c293a;--danger:#ff8a80;--glass:rgba(28,26,38,.78);--tile:#2a2738}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
-body{font:16px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column}
-header{display:flex;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--bd);background:var(--card)}
-input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:inherit}
-button{font:inherit;padding:10px 14px;border:0;border-radius:10px;background:var(--acc);color:#fff;cursor:pointer}
-button.ghost{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+body{font:16px/1.4 ui-rounded,"SF Pro Rounded",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;overflow:hidden}
+#mapwrap{position:relative;flex:1;min-height:0}
+#map{position:absolute;inset:0}
+#msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mut);background:var(--bg);z-index:3}
+#top{position:absolute;top:0;left:0;right:0;z-index:5;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 0;pointer-events:none}
+#top>*{pointer-events:auto}
+header{display:flex;gap:6px;padding:6px;border-radius:24px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 4px 18px rgba(0,0,0,.18)}
+input{flex:1;min-width:0;font:inherit;padding:10px 14px;border:1px solid var(--bd);border-radius:16px;background:transparent;color:inherit}
+header input{border:0}
+button{font:inherit;font-weight:700;padding:10px 16px;border:0;border-radius:16px;background:var(--acc);color:#fff;cursor:pointer}
+button.ghost{background:var(--tile);color:var(--tx);border:0}
 button:disabled{opacity:.4}
-.chips{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px}
-.chip{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:999px;padding:7px 13px;font-size:14px}
-.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
-#map{flex:1;min-height:200px;position:relative}
-#msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mut)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding:10px 0 0}
+.chip{border:0;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--tx);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.chip.on{background:var(--acc);color:#fff}
+.tags .chip{background:var(--tile);box-shadow:none;backdrop-filter:none}
+.tags .chip.on{background:var(--acc)}
 .mpin{width:0;height:0;position:relative;transition:opacity .2s}
-.pb{position:absolute;left:-13px;top:-31px;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.pb{position:absolute;left:-16px;top:-38px;width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .pb::after{content:"";position:absolute;inset:-10px}
-.pb .f{transform:rotate(45deg);font-size:13px;line-height:1}
-.pb.sel{box-shadow:0 0 0 3px var(--acc),0 1px 4px rgba(0,0,0,.45)}
-.pb.draft{background:#fff;border:2px dashed var(--acc)}
-.dot{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);transform:translate(-50%,-50%);background:#2d6cdf}
+.pb .f{transform:rotate(45deg);font-size:16px;line-height:1}
+.pb.sel{animation:pulse 1.5s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(108,92,231,.7),0 3px 10px rgba(0,0,0,.4)}100%{box-shadow:0 0 0 14px rgba(108,92,231,0),0 3px 10px rgba(0,0,0,.4)}}
+.pb.draft{background:#fff;border:3px dashed var(--acc)}
+.dot{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);transform:translate(-50%,-50%);background:#6c5ce7;position:relative}
+.dot.me::after{content:"";position:absolute;inset:-14px;border-radius:50%;background:rgba(108,92,231,.28);animation:halo 2s infinite}
+@keyframes halo{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:0}}
 .dot.found{background:#e5484d}
-#info{position:fixed;left:12px;right:12px;top:calc(132px + env(safe-area-inset-top,0px));z-index:20;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 40px 12px 14px;box-shadow:0 4px 18px rgba(0,0,0,.35);max-height:38%;overflow:auto}
+#info{position:fixed;left:12px;right:12px;top:calc(124px + env(safe-area-inset-top,0px));z-index:20;background:var(--card);border-radius:20px;padding:14px 44px 14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.35);max-height:36%;overflow:auto}
 #info[hidden]{display:none}
-#info h3{margin:0 0 4px;font-size:17px}
-#info .row{font-size:14px;margin-top:3px}
-#info a{color:var(--acc)}
-#info .x{position:absolute;top:6px;right:6px;width:32px;height:32px;padding:0;background:transparent;color:var(--mut);font-size:20px}
-#sheet{max-height:46%;overflow:auto;background:var(--card);border-top:1px solid var(--bd);padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
-#sheet h2{font-size:18px;margin:0 0 4px}
+#info h3{margin:0 0 4px;font-size:19px;font-weight:800}
+#info .row{font-size:14px;margin-top:4px}
+#info a,.rowlink a{color:var(--acc);font-weight:600}
+#info .x{position:absolute;top:8px;right:8px;width:34px;height:34px;padding:0;border-radius:50%;background:var(--tile);color:var(--mut);font-size:20px}
+#sheet{max-height:52%;overflow:auto;background:var(--card);border-radius:28px 28px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.22);padding:10px 16px calc(14px + env(safe-area-inset-bottom,0px));position:relative;z-index:6}
+#sheet::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--bd);margin:0 auto 10px}
+#sheet h2{font-size:23px;font-weight:800;margin:0 0 4px}
+.hint{background:var(--tile);color:var(--mut);padding:14px 16px;border-radius:18px;font-weight:600}
 .mut{color:var(--mut);font-size:13px}
-.bar{height:8px;border-radius:4px;background:var(--bd);overflow:hidden;margin:6px 0 8px}
-.bar i{display:block;height:100%}
-.moods{display:flex;justify-content:space-between;margin:10px 0}
-.mood{font-size:23px;background:none;border:2px solid transparent;border-radius:12px;padding:3px 2px;line-height:1.1}
-textarea{width:100%;margin-top:10px;font:inherit;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:inherit;resize:vertical}
-.rev{font-size:14px;margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--bg)}
-.mood.on{border-color:var(--acc);background:var(--bg)}
+.bar{height:10px;border-radius:5px;background:var(--bd);overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;border-radius:5px}
+.moods{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.mood{font-size:30px;line-height:1;padding:12px 0;border-radius:18px;background:var(--tile);border:2px solid transparent}
+.mood.on{border-color:var(--acc);transform:scale(1.06)}
 .tags{display:flex;gap:8px;flex-wrap:wrap}
-.btn{width:100%;font-weight:600;margin-top:12px;padding:13px}
-.del{color:var(--danger);margin-top:8px;width:100%}
+textarea{width:100%;margin-top:12px;font:inherit;padding:12px 14px;border:0;border-radius:16px;background:var(--tile);color:inherit;resize:vertical}
+.rev{font-size:14px;margin-top:6px;padding:8px 10px;border-radius:12px;background:var(--tile)}
+.btn{width:100%;margin-top:12px;padding:15px;border-radius:18px;font-size:17px}
+.del{color:var(--danger);margin-top:8px;width:100%;background:transparent}
 </style>
 </head>
 <body>
-<header>
-  <input id="q" type="search" placeholder="Поиск адреса, например: Москва, Тверская 1">
-  <button id="go">Найти</button>
-  <button id="loc" class="ghost" aria-label="Моё местоположение">Я</button>
-</header>
-<div class="chips" id="chips"></div>
-<div id="map"><div id="msg">Загрузка карты…</div></div>
+<div id="mapwrap">
+  <div id="map"><div id="msg">Загрузка карты…</div></div>
+  <div id="top">
+    <header>
+      <input id="q" type="search" placeholder="Поиск адреса">
+      <button id="go">Найти</button>
+      <button id="loc" class="ghost" aria-label="Моё местоположение">📍</button>
+    </header>
+    <div class="chips" id="chips"></div>
+  </div>
+</div>
 <div id="info" hidden></div>
-<div id="sheet"><span class="mut">Нажмите на карту, чтобы добавить место, или выберите существующее.</span></div>
+<div id="sheet"><div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div></div>
 
 <script>
 const MAP_KEY = '585f43bd-1508-4be9-ab2f-0736c802dda6'; // JavaScript API
@@ -109,7 +124,7 @@ function select(id){
   const p=places.find(x=>x.id===id);if(p)map.setLocation({center:p.c,duration:300});
   drawSheet();
 }
-function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${t}</button>`).join('')}</div><textarea id="rv" rows="2" placeholder="Отзыв о месте (необязательно)"></textarea>`}
+function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${t}</button>`).join('')}</div><textarea id="rv" rows="2" placeholder="Отзыв о месте"></textarea>`}
 function bind(s){
   const rv=$('rv');if(rv){rv.value=reviewText;rv.oninput=()=>{reviewText=rv.value}}
   s.querySelectorAll('.mood').forEach(b=>b.onclick=()=>{pm=+b.dataset.m;keepName();drawSheet()});
@@ -121,9 +136,8 @@ function keepName(){const n=$('nm');if(n)draftName=n.value}
 function drawSheet(){
   const s=$('sheet');
   if(draft){
-    s.innerHTML=`<h2>Новое место</h2><div class="mut" id="ad"></div><div id="yd" style="margin:4px 0 8px"></div><input id="nm" placeholder="Название"><div class="mut" style="margin-top:6px">Какая тут атмосфера?</div>${moodButtons()}<button class="btn" id="save" ${pm?'':'disabled'}>Сохранить место</button><button class="ghost del" id="cancel" style="color:var(--tx)">Отмена</button>`;
+    s.innerHTML=`<h2>Новое место</h2><div class="mut" id="ad" style="margin-bottom:8px"></div><input id="nm" placeholder="Название"><div class="mut" style="margin-top:6px">Какая тут атмосфера?</div>${moodButtons()}<button class="btn" id="save" ${pm?'':'disabled'}>Сохранить место</button><button class="ghost del" id="cancel" style="color:var(--tx)">Отмена</button>`;
     $('nm').value=draftName;$('ad').textContent='📍 '+draftAddr;
-    if(!/^Определяю/.test(draftAddr)){const ya=document.createElement('a');ya.href=ymapsUrl(draftName||draftShort,/^(Адрес не|Не удалось)/.test(draftAddr)?'':draftAddr,draft);ya.target='_blank';ya.rel='noopener';ya.textContent='🗺 Рейтинг и отзывы в Яндекс Картах';ya.style.color='var(--acc)';$('yd').appendChild(ya)}
     bind(s);
     $('cancel').onclick=()=>{clearDraft();draftName='';drawSheet()};
     $('save').onclick=()=>{
@@ -134,9 +148,9 @@ function drawSheet(){
     return;
   }
   const p=places.find(x=>x.id===sel);
-  if(!p){s.innerHTML='<span class="mut">Нажмите на карту, чтобы добавить место, или выберите существующее.</span>';return}
+  if(!p){s.innerHTML='<div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div>';return}
   const a=avg(p),tags=Object.entries(p.t).sort((x,y)=>y[1]-x[1]).slice(0,3).map(x=>x[0]).join(', ');
-  s.innerHTML=`<h2></h2><div class="mut" id="ad2"></div><div class="mut">${a==null?'Пока нет отметок':`Сейчас ${face(a)} ${a.toFixed(1)} из ${MOODS.length} · отметок: ${p.v.length}`}</div><div class="bar"><i style="width:${a?a/MOODS.length*100:0}%;background:${col(a)}"></i></div><div class="mut">Теги: ${tags||'пока нет'}</div><div id="ymrow" style="margin-top:6px"></div><div id="revs"></div>${moodButtons()}<button class="btn" id="go2" ${pm?'':'disabled'}>Отметить настроение</button><button class="ghost del" id="rm">Удалить место</button>`;
+  s.innerHTML=`<h2></h2><div class="mut" id="ad2"></div><div class="mut">${a==null?'Пока нет отметок':`Сейчас ${face(a)} ${a.toFixed(1)} из ${MOODS.length} · отметок: ${p.v.length}`}</div><div class="bar"><i style="width:${a?a/MOODS.length*100:0}%;background:${col(a)}"></i></div><div class="mut">Теги: ${tags||'пока нет'}</div><div id="ymrow" class="rowlink" style="margin-top:6px"></div><div id="revs"></div>${moodButtons()}<button class="btn" id="go2" ${pm?'':'disabled'}>Отметить настроение</button><button class="ghost del" id="rm">Удалить место</button>`;
   s.querySelector('h2').textContent=p.name;$('ad2').textContent=p.addr?'📍 '+p.addr:'';
   const ya=document.createElement('a');ya.href=ymapsUrl(p.name,p.addr||'',p.c);ya.target='_blank';ya.rel='noopener';ya.textContent='🗺 Рейтинг и отзывы в Яндекс Картах';ya.style.color='var(--acc)';$('ymrow').appendChild(ya);
   (p.r||[]).slice(-5).reverse().forEach(r=>{const d=document.createElement('div');d.className='rev';d.textContent=(MOODS[r.m-1]||'')+' '+r.x+' · '+new Date(r.d).toLocaleDateString('ru-RU');$('revs').appendChild(d)});
@@ -243,19 +257,35 @@ function locate(){
   if(!navigator.geolocation)return alert('Геолокация недоступна в этом браузере.');
   navigator.geolocation.getCurrentPosition(pos=>{
     const c=[pos.coords.longitude,pos.coords.latitude];
-    if(me)map.removeChild(me);
-    me=new lib.YMapMarker({coordinates:c},dot('me'));map.addChild(me);
+    setMe(c);
     map.setLocation({center:c,zoom:15,duration:400});
   },()=>alert('Не удалось определить местоположение. Разрешите доступ в настройках браузера.'));
 }
 
+function getPos(){return new Promise(res=>{
+  if(!navigator.geolocation)return res(null);
+  let done=false;const fin=v=>{if(!done){done=true;res(v)}};
+  setTimeout(()=>fin(null),7000);
+  navigator.geolocation.getCurrentPosition(p=>fin([p.coords.longitude,p.coords.latitude]),()=>fin(null),{enableHighAccuracy:true,timeout:7000,maximumAge:60000});
+})}
+function setMe(c){
+  if(me)map.removeChild(me);
+  me=new lib.YMapMarker({coordinates:c},dot('me'));map.addChild(me);
+  try{localStorage.setItem('moodmap_last',JSON.stringify(c))}catch(e){}
+}
 async function init(){
   await ymaps3.ready;lib=ymaps3;
   const {YMap,YMapDefaultSchemeLayer,YMapDefaultFeaturesLayer,YMapListener}=lib;
+  say('Определяю, где вы находитесь…');
+  const pos=await getPos();
+  let last=null;try{last=JSON.parse(localStorage.getItem('moodmap_last')||'null')}catch(e){}
+  const start=pos||last||(places.length?places[0].c:[37.618,55.751]);
   $('msg').style.display='none';
-  map=new YMap($('map'),{location:{center:places.length?places[0].c:[37.618,55.751],zoom:places.length?13:10}});
-  map.addChild(new YMapDefaultSchemeLayer());
+  map=new YMap($('map'),{location:{center:start,zoom:(pos||last||places.length)?15:10}});
+  const dark=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches;
+  map.addChild(new YMapDefaultSchemeLayer({theme:dark?'dark':'light'}));
   map.addChild(new YMapDefaultFeaturesLayer());
+  if(pos)setMe(pos);
   map.addChild(new YMapListener({layer:'any',onClick:(obj,ev)=>{if(obj&&obj.type==='marker')return;if(ev&&ev.coordinates)tapPlace(ev.coordinates,obj)}}));
   places.forEach(addMarker);
 }
@@ -264,9 +294,9 @@ $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('loc').onclick=()=>map?locate():null;
 drawChips();
-say('Версия 6 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 7 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
-setTimeout(()=>{if(!map)say('Карта не ответила за 10 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},10000);
+setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
 s.src='https://api-maps.yandex.ru/v3/?apikey='+encodeURIComponent(MAP_KEY)+'&lang=ru_RU';
 s.onload=()=>init().catch(e=>say('Ошибка карты: '+e.message));
