@@ -28,6 +28,12 @@ button:disabled{opacity:.4}
 .pb.draft{background:#fff;border:2px dashed var(--acc)}
 .dot{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);transform:translate(-50%,-50%);background:#2d6cdf}
 .dot.found{background:#e5484d}
+#info{position:fixed;left:12px;right:12px;top:calc(132px + env(safe-area-inset-top,0px));z-index:20;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 40px 12px 14px;box-shadow:0 4px 18px rgba(0,0,0,.35);max-height:38%;overflow:auto}
+#info[hidden]{display:none}
+#info h3{margin:0 0 4px;font-size:17px}
+#info .row{font-size:14px;margin-top:3px}
+#info a{color:var(--acc)}
+#info .x{position:absolute;top:6px;right:6px;width:32px;height:32px;padding:0;background:transparent;color:var(--mut);font-size:20px}
 #sheet{max-height:46%;overflow:auto;background:var(--card);border-top:1px solid var(--bd);padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 #sheet h2{font-size:18px;margin:0 0 4px}
 .mut{color:var(--mut);font-size:13px}
@@ -49,6 +55,7 @@ button:disabled{opacity:.4}
 </header>
 <div class="chips" id="chips"></div>
 <div id="map"><div id="msg">Загрузка карты…</div></div>
+<div id="info" hidden></div>
 <div id="sheet"><span class="mut">Нажмите на карту, чтобы добавить место, или выберите существующее.</span></div>
 
 <script>
@@ -93,7 +100,7 @@ function addMarker(p){
   const mk=new lib.YMapMarker({coordinates:p.c},e);
   map.addChild(mk);pins.set(p.id,{mk,el:e});paint(p);
 }
-function clearDraft(){if(draftMk){map.removeChild(draftMk);draftMk=null}draft=null}
+function clearDraft(){hideInfo();if(draftMk){map.removeChild(draftMk);draftMk=null}draft=null}
 function select(id){
   clearDraft();sel=id;pm=null;pt=null;refreshPins();
   const p=places.find(x=>x.id===id);if(p)map.setLocation({center:p.c,duration:300});
@@ -131,6 +138,53 @@ function drawSheet(){
   $('rm').onclick=()=>{map.removeChild(pins.get(p.id).mk);pins.delete(p.id);places=places.filter(x=>x.id!==p.id);store.save(places);sel=null;drawSheet()};
 }
 
+function hideInfo(){$('info').hidden=true}
+function showInfo(d){
+  const b=$('info');b.textContent='';b.hidden=false;
+  const x=document.createElement('button');x.className='x';x.textContent='×';x.setAttribute('aria-label','Закрыть');x.onclick=hideInfo;b.appendChild(x);
+  const h=document.createElement('h3');h.textContent=d.title||'Место';b.appendChild(h);
+  const add=(t,cls)=>{if(!t)return null;const r=document.createElement('div');r.className='row '+(cls||'');r.textContent=t;b.appendChild(r);return r};
+  add(d.cat);
+  add(d.addr&&'📍 '+d.addr);
+  add(d.hours&&'🕒 '+d.hours);
+  if(d.phone){const r=add('📞 ');const a=document.createElement('a');a.textContent=d.phone;a.href='tel:'+d.phone.replace(/[^+\d]/g,'');r.appendChild(a)}
+  if(d.url&&/^https?:\/\//.test(d.url)){const r=add('🌐 ');const a=document.createElement('a');a.textContent=d.url.replace(/^https?:\/\//,'').slice(0,40);a.href=d.url;a.target='_blank';a.rel='noopener';r.appendChild(a)}
+  if(d.busy)add('Загружаю описание…','mut');
+  if(d.src)add('Источник: '+d.src,'mut');
+}
+async function findOrg(c,hotName){
+  if(!lib.search)return null;
+  const dLat=0.0004,dLon=0.0007;
+  const r=await lib.search({text:hotName||'организация',bounds:[[c[0]-dLon,c[1]-dLat],[c[0]+dLon,c[1]+dLat]],limit:10});
+  const list=Array.isArray(r)?r:(r&&r.features)||[];
+  let best=null,bd=1e9;
+  for(const f of list){
+    const g=f.geometry&&f.geometry.coordinates;if(!g)continue;
+    const d=Math.hypot((g[0]-c[0])*0.57*111000,(g[1]-c[1])*111000);
+    if(d<bd){bd=d;best=f}
+  }
+  if(!best||bd>(hotName?150:80))return null;
+  const p=best.properties||{},cm=p.CompanyMetaData||{};
+  const cats=(cm.Categories||p.categories||[]).map(x=>x&&x.name||x).filter(x=>typeof x==='string').slice(0,3).join(', ');
+  const ph=(cm.Phones||[]).map(x=>x&&x.formatted||x).filter(x=>typeof x==='string')[0]||'';
+  return{name:p.name||hotName,cat:cats,addr:p.description||'',hours:(cm.Hours&&cm.Hours.text)||'',phone:ph,url:cm.url||''};
+}
+async function tapPlace(c,obj){
+  const hp=(obj&&obj.entity&&obj.entity.properties)||{};
+  const hotName=String(hp.name||hp.title||(hp.hint&&hp.hint.title)||'');
+  startDraft(c,hotName,'Определяю адрес…');
+  showInfo({title:hotName||'Определяю место…',busy:true});
+  const [ar,or]=await Promise.allSettled([revGeocode(c),findOrg(c,hotName)]);
+  if(draft!==c)return;
+  const a=ar.status==='fulfilled'?ar.value:null,o=or.status==='fulfilled'?or.value:null;
+  keepName();
+  draftAddr=a?a.full:'Адрес не найден, будут координаты';
+  draftShort=(o&&o.name)||hotName||(a&&a.short)||'';
+  if(!draftName.trim()||draftName===hotName)draftName=draftShort;
+  drawSheet();
+  if(o)showInfo({title:o.name,cat:o.cat,addr:(a&&a.full)||o.addr,hours:o.hours,phone:o.phone,url:o.url,src:'поиск Яндекса'});
+  else showInfo({title:hotName||(a&&a.short)||'Место на карте',addr:a&&a.full,src:hotName?'название с карты (описание не найдено)':'адрес (организацию рядом найти не удалось)'});
+}
 let draftAddr='',draftShort='';
 function startDraft(c,name,addr){
   sel=null;refreshPins();clearDraft();pm=null;pt=null;
@@ -193,7 +247,7 @@ async function init(){
   map=new YMap($('map'),{location:{center:places.length?places[0].c:[37.618,55.751],zoom:places.length?13:10}});
   map.addChild(new YMapDefaultSchemeLayer());
   map.addChild(new YMapDefaultFeaturesLayer());
-  map.addChild(new YMapListener({layer:'any',onClick:(obj,ev)=>{if(!obj&&ev&&ev.coordinates)startDraft(ev.coordinates)}}));
+  map.addChild(new YMapListener({layer:'any',onClick:(obj,ev)=>{if(obj&&obj.type==='marker')return;if(ev&&ev.coordinates)tapPlace(ev.coordinates,obj)}}));
   places.forEach(addMarker);
 }
 
@@ -201,7 +255,7 @@ $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('loc').onclick=()=>map?locate():null;
 drawChips();
-say('Версия 4 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 5 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 10 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},10000);
 const s=document.createElement('script');
