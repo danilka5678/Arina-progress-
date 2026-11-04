@@ -64,7 +64,7 @@ let places=store.load(),map,lib,pins=new Map(),sel=null,draft=null,draftMk=null,
 const avg=p=>p.v.length?p.v.reduce((a,b)=>a+b,0)/p.v.length:null;
 const col=a=>a==null?'#9aa1ad':`hsl(${(a-1)/4*120},70%,50%)`;
 const face=a=>a==null?'•':MOODS[Math.round(a)-1];
-function top(tag){let b=null,m=0;places.forEach(p=>{const n=p.t[tag]||0;if(n>m){m=n;b=p.id}});return b}
+function bestFor(tag){let b=null,m=0;places.forEach(p=>{const n=p.t[tag]||0;if(n>m){m=n;b=p.id}});return b}
 function say(t){const m=$('msg');m.textContent=t;m.style.display='flex'}
 function el(cls){const d=document.createElement('div');d.className='mpin '+(cls||'');return d}
 
@@ -77,7 +77,7 @@ function drawChips(){
 }
 function paint(p){
   const o=pins.get(p.id);if(!o)return;
-  const a=avg(p),best=filt?top(filt):null;
+  const a=avg(p),best=filt?bestFor(filt):null;
   o.el.style.background=col(a);o.el.textContent=face(a);
   o.el.style.opacity=filt&&p.id!==best?0.3:1;
   o.el.classList.toggle('sel',sel===p.id);
@@ -178,7 +178,7 @@ $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('loc').onclick=()=>map?locate():null;
 drawChips();
-say('Версия 2 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 3 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 10 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},10000);
 const s=document.createElement('script');
