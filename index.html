@@ -40,7 +40,9 @@ button:disabled{opacity:.4}
 .bar{height:8px;border-radius:4px;background:var(--bd);overflow:hidden;margin:6px 0 8px}
 .bar i{display:block;height:100%}
 .moods{display:flex;justify-content:space-between;margin:10px 0}
-.mood{font-size:28px;background:none;border:2px solid transparent;border-radius:14px;padding:4px 8px}
+.mood{font-size:23px;background:none;border:2px solid transparent;border-radius:12px;padding:3px 2px;line-height:1.1}
+textarea{width:100%;margin-top:10px;font:inherit;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:inherit;resize:vertical}
+.rev{font-size:14px;margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--bg)}
 .mood.on{border-color:var(--acc);background:var(--bg)}
 .tags{display:flex;gap:8px;flex-wrap:wrap}
 .btn{width:100%;font-weight:600;margin-top:12px;padding:13px}
@@ -62,17 +64,18 @@ button:disabled{opacity:.4}
 const MAP_KEY = '585f43bd-1508-4be9-ab2f-0736c802dda6'; // JavaScript API
 const GEO_KEY = '34c7b8b8-2ce4-49da-985b-1102ac7a5104'; // HTTP Геокодер
 
-const MOODS=["😞","😐","🙂","😊","🤩"];
+const MOODS=["😭","😞","😐","🙂","😊","😄","😍","🤩"];
 const TAGS=["тихо","уютно","шумно","весело","суета"];
 const $=id=>document.getElementById(id);
 const store={
   load(){try{return JSON.parse(localStorage.getItem('moodmap_places')||'[]')}catch(e){return[]}},
   save(v){try{localStorage.setItem('moodmap_places',JSON.stringify(v))}catch(e){}}
 };
-let places=store.load(),map,lib,pins=new Map(),sel=null,draft=null,draftMk=null,pm=null,pt=null,filt=null,me,found;
+let places=store.load(),map,lib,pins=new Map(),sel=null,draft=null,draftMk=null,pm=null,pt=null,filt=null,me,found,reviewText='';
+places.forEach(p=>{if(!p.s){p.v=p.v.map(x=>Math.round((x-1)/4*7+1));p.s=8}if(!p.r)p.r=[]});store.save(places);
 
 const avg=p=>p.v.length?p.v.reduce((a,b)=>a+b,0)/p.v.length:null;
-const col=a=>a==null?'#9aa1ad':`hsl(${(a-1)/4*120},70%,50%)`;
+const col=a=>a==null?'#9aa1ad':`hsl(${(a-1)/(MOODS.length-1)*120},70%,50%)`;
 const face=a=>a==null?'•':MOODS[Math.round(a)-1];
 function bestFor(tag){let b=null,m=0;places.forEach(p=>{const n=p.t[tag]||0;if(n>m){m=n;b=p.id}});return b}
 function say(t){const m=$('msg');m.textContent=t;m.style.display='flex'}
@@ -102,12 +105,13 @@ function addMarker(p){
 }
 function clearDraft(){hideInfo();if(draftMk){map.removeChild(draftMk);draftMk=null}draft=null}
 function select(id){
-  clearDraft();sel=id;pm=null;pt=null;refreshPins();
+  clearDraft();sel=id;pm=null;pt=null;reviewText='';refreshPins();
   const p=places.find(x=>x.id===id);if(p)map.setLocation({center:p.c,duration:300});
   drawSheet();
 }
-function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${t}</button>`).join('')}</div>`}
+function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${t}</button>`).join('')}</div><textarea id="rv" rows="2" placeholder="Отзыв о месте (необязательно)"></textarea>`}
 function bind(s){
+  const rv=$('rv');if(rv){rv.value=reviewText;rv.oninput=()=>{reviewText=rv.value}}
   s.querySelectorAll('.mood').forEach(b=>b.onclick=()=>{pm=+b.dataset.m;keepName();drawSheet()});
   s.querySelectorAll('.tags .chip').forEach(b=>b.onclick=()=>{pt=pt===b.dataset.t?null:b.dataset.t;keepName();drawSheet()});
 }
@@ -117,13 +121,14 @@ function keepName(){const n=$('nm');if(n)draftName=n.value}
 function drawSheet(){
   const s=$('sheet');
   if(draft){
-    s.innerHTML=`<h2>Новое место</h2><div class="mut" id="ad" style="margin-bottom:8px"></div><input id="nm" placeholder="Название"><div class="mut" style="margin-top:6px">Какая тут атмосфера?</div>${moodButtons()}<button class="btn" id="save" ${pm?'':'disabled'}>Сохранить место</button><button class="ghost del" id="cancel" style="color:var(--tx)">Отмена</button>`;
+    s.innerHTML=`<h2>Новое место</h2><div class="mut" id="ad"></div><div id="yd" style="margin:4px 0 8px"></div><input id="nm" placeholder="Название"><div class="mut" style="margin-top:6px">Какая тут атмосфера?</div>${moodButtons()}<button class="btn" id="save" ${pm?'':'disabled'}>Сохранить место</button><button class="ghost del" id="cancel" style="color:var(--tx)">Отмена</button>`;
     $('nm').value=draftName;$('ad').textContent='📍 '+draftAddr;
+    if(!/^Определяю/.test(draftAddr)){const ya=document.createElement('a');ya.href=ymapsUrl(draftName||draftShort,/^(Адрес не|Не удалось)/.test(draftAddr)?'':draftAddr,draft);ya.target='_blank';ya.rel='noopener';ya.textContent='🗺 Рейтинг и отзывы в Яндекс Картах';ya.style.color='var(--acc)';$('yd').appendChild(ya)}
     bind(s);
     $('cancel').onclick=()=>{clearDraft();draftName='';drawSheet()};
     $('save').onclick=()=>{
       const name=$('nm').value.trim()||draftShort||draft[1].toFixed(5)+', '+draft[0].toFixed(5);
-      const p={id:String(Date.now()),c:draft,name,addr:/^(Определяю|Адрес не|Не удалось)/.test(draftAddr)?'':draftAddr,v:[pm],t:pt?{[pt]:1}:{}};
+      const p={id:String(Date.now()),c:draft,name,addr:/^(Определяю|Адрес не|Не удалось)/.test(draftAddr)?'':draftAddr,v:[pm],s:8,r:reviewText.trim()?[{m:pm,t:pt||'',x:reviewText.trim(),d:Date.now()}]:[],t:pt?{[pt]:1}:{}};
       places.push(p);store.save(places);clearDraft();draftName='';addMarker(p);select(p.id);
     };
     return;
@@ -131,13 +136,16 @@ function drawSheet(){
   const p=places.find(x=>x.id===sel);
   if(!p){s.innerHTML='<span class="mut">Нажмите на карту, чтобы добавить место, или выберите существующее.</span>';return}
   const a=avg(p),tags=Object.entries(p.t).sort((x,y)=>y[1]-x[1]).slice(0,3).map(x=>x[0]).join(', ');
-  s.innerHTML=`<h2></h2><div class="mut" id="ad2"></div><div class="mut">${a==null?'Пока нет отметок':`Сейчас ${face(a)} ${a.toFixed(1)} из 5 · отметок: ${p.v.length}`}</div><div class="bar"><i style="width:${a?a/5*100:0}%;background:${col(a)}"></i></div><div class="mut">Теги: ${tags||'пока нет'}</div>${moodButtons()}<button class="btn" id="go2" ${pm?'':'disabled'}>Отметить настроение</button><button class="ghost del" id="rm">Удалить место</button>`;
+  s.innerHTML=`<h2></h2><div class="mut" id="ad2"></div><div class="mut">${a==null?'Пока нет отметок':`Сейчас ${face(a)} ${a.toFixed(1)} из ${MOODS.length} · отметок: ${p.v.length}`}</div><div class="bar"><i style="width:${a?a/MOODS.length*100:0}%;background:${col(a)}"></i></div><div class="mut">Теги: ${tags||'пока нет'}</div><div id="ymrow" style="margin-top:6px"></div><div id="revs"></div>${moodButtons()}<button class="btn" id="go2" ${pm?'':'disabled'}>Отметить настроение</button><button class="ghost del" id="rm">Удалить место</button>`;
   s.querySelector('h2').textContent=p.name;$('ad2').textContent=p.addr?'📍 '+p.addr:'';
+  const ya=document.createElement('a');ya.href=ymapsUrl(p.name,p.addr||'',p.c);ya.target='_blank';ya.rel='noopener';ya.textContent='🗺 Рейтинг и отзывы в Яндекс Картах';ya.style.color='var(--acc)';$('ymrow').appendChild(ya);
+  (p.r||[]).slice(-5).reverse().forEach(r=>{const d=document.createElement('div');d.className='rev';d.textContent=(MOODS[r.m-1]||'')+' '+r.x+' · '+new Date(r.d).toLocaleDateString('ru-RU');$('revs').appendChild(d)});
   bind(s);
-  $('go2').onclick=()=>{p.v.push(pm);if(p.v.length>30)p.v.shift();if(pt)p.t[pt]=(p.t[pt]||0)+1;store.save(places);pm=null;pt=null;paint(p);drawSheet()};
+  $('go2').onclick=()=>{p.v.push(pm);if(p.v.length>30)p.v.shift();if(pt)p.t[pt]=(p.t[pt]||0)+1;if(reviewText.trim()){p.r=p.r||[];p.r.push({m:pm,t:pt||'',x:reviewText.trim(),d:Date.now()})}reviewText='';store.save(places);pm=null;pt=null;paint(p);drawSheet()};
   $('rm').onclick=()=>{map.removeChild(pins.get(p.id).mk);pins.delete(p.id);places=places.filter(x=>x.id!==p.id);store.save(places);sel=null;drawSheet()};
 }
 
+function ymapsUrl(name,addr,c){return 'https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z=17&text='+encodeURIComponent((name||'')+(addr?', '+addr:''))}
 function hideInfo(){$('info').hidden=true}
 function showInfo(d){
   const b=$('info');b.textContent='';b.hidden=false;
@@ -149,6 +157,7 @@ function showInfo(d){
   add(d.hours&&'🕒 '+d.hours);
   if(d.phone){const r=add('📞 ');const a=document.createElement('a');a.textContent=d.phone;a.href='tel:'+d.phone.replace(/[^+\d]/g,'');r.appendChild(a)}
   if(d.url&&/^https?:\/\//.test(d.url)){const r=add('🌐 ');const a=document.createElement('a');a.textContent=d.url.replace(/^https?:\/\//,'').slice(0,40);a.href=d.url;a.target='_blank';a.rel='noopener';r.appendChild(a)}
+  if(d.link){const r=add('🗺 ');const a=document.createElement('a');a.textContent='Рейтинг и отзывы в Яндекс Картах';a.href=d.link;a.target='_blank';a.rel='noopener';r.appendChild(a)}
   if(d.busy)add('Загружаю описание…','mut');
   if(d.src)add('Источник: '+d.src,'mut');
 }
@@ -182,12 +191,12 @@ async function tapPlace(c,obj){
   draftShort=(o&&o.name)||hotName||(a&&a.short)||'';
   if(!draftName.trim()||draftName===hotName)draftName=draftShort;
   drawSheet();
-  if(o)showInfo({title:o.name,cat:o.cat,addr:(a&&a.full)||o.addr,hours:o.hours,phone:o.phone,url:o.url,src:'поиск Яндекса'});
-  else showInfo({title:hotName||(a&&a.short)||'Место на карте',addr:a&&a.full,src:hotName?'название с карты (описание не найдено)':'адрес (организацию рядом найти не удалось)'});
+  if(o)showInfo({title:o.name,cat:o.cat,addr:(a&&a.full)||o.addr,hours:o.hours,phone:o.phone,url:o.url,link:ymapsUrl(o.name,(a&&a.full)||o.addr,c),src:'поиск Яндекса'});
+  else showInfo({title:hotName||(a&&a.short)||'Место на карте',addr:a&&a.full,link:ymapsUrl(hotName||(a&&a.short)||'',a?a.full:'',c),src:hotName?'название с карты (описание не найдено)':'адрес (организацию рядом найти не удалось)'});
 }
 let draftAddr='',draftShort='';
 function startDraft(c,name,addr){
-  sel=null;refreshPins();clearDraft();pm=null;pt=null;
+  sel=null;refreshPins();clearDraft();pm=null;pt=null;reviewText='';
   draft=c;draftName=name||'';draftShort=name||'';draftAddr=addr||'Определяю адрес…';
   draftMk=new lib.YMapMarker({coordinates:c},pin('draft'));map.addChild(draftMk);
   drawSheet();
@@ -255,7 +264,7 @@ $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('loc').onclick=()=>map?locate():null;
 drawChips();
-say('Версия 5 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 6 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 10 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},10000);
 const s=document.createElement('script');
