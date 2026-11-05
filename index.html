@@ -27,7 +27,7 @@ button{font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.05
 button:active{transform:scale(.95)}
 button.ghost{background:var(--gloss);color:var(--tx);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 button:disabled{opacity:.4}
-#chips{display:flex;gap:8px;overflow-x:auto;margin:10px -12px 0;padding:2px 12px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent)}
+#chips{display:flex;align-items:center;gap:8px;overflow-x:auto;margin:6px -12px 0;padding:6px 12px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent)}
 #chips::-webkit-scrollbar{display:none}
 .chip{flex:0 0 auto;white-space:nowrap;border:1px solid var(--bd);background:linear-gradient(145deg,rgba(14,204,237,.24),rgba(3,8,18,.55) 58%);background-clip:padding-box;color:var(--tx);border-radius:999px;padding:8px 15px;font-size:15px;box-shadow:0 0 16px rgba(2,94,196,.4),inset 0 1px 0 rgba(255,255,255,.15)}
 .chip.on{background:var(--cta);color:#030812;border-color:transparent}
@@ -79,7 +79,8 @@ textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(14,204,237,.35)
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 #loc{padding:0;width:46px;display:flex;align-items:center;justify-content:center;color:var(--acc)}
 svg.ic{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.chip.emo{width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;text-transform:none;border-radius:50%}
+.chip.emo{width:56px;height:56px;padding:0;display:flex;align-items:center;justify-content:center;font-size:29px;line-height:1;text-transform:none;border-radius:18px;border:0;background:var(--gloss);background-clip:padding-box;box-shadow:0 0 14px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.25)}
+.chip.emo.on{background:var(--gloss);color:inherit;box-shadow:0 0 0 2px var(--acc),0 0 18px rgba(14,204,237,.6),inset 0 1px 0 rgba(255,255,255,.35)}
 .infbox{background:var(--gloss);border-radius:16px;padding:10px 12px;margin-bottom:10px;font-size:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 .infbox[hidden]{display:none}
 .infbox .row{margin:3px 0}
@@ -105,7 +106,7 @@ const MAP_KEY = '585f43bd-1508-4be9-ab2f-0736c802dda6'; // JavaScript API
 const GEO_KEY = '34c7b8b8-2ce4-49da-985b-1102ac7a5104'; // HTTP Геокодер
 
 const MOODS=["😭","😞","😐","🙂","😊","😄","😍","🤩"];
-const TAGS=["тихо","уютно","шумно","весело","суета","романтично","для работы","на природе"];
+const TAGS=["тихо","уютно","шумно","весело","суета","романтично","для работы"];
 const $=id=>document.getElementById(id);
 const store={
   load(){try{return JSON.parse(localStorage.getItem('moodmap_places')||'[]')}catch(e){return[]}},
@@ -123,7 +124,7 @@ function pin(cls){const o=document.createElement('div');o.className='mpin';const
 function dot(cls){const d=document.createElement('div');d.className='dot '+(cls||'');return d}
 
 function passMood(p){if(moodFilter==null)return true;const a=avg(p);return a!=null&&Math.round(a)===moodFilter}
-const OPTS=[["🤫","тихо","Хочу тишины"],["🛋️","уютно","Хочу уюта"],["🎉","весело","Хочу веселья"],["⚡","суета","Хочу суеты"],["🔊","шумно","Хочу шума"],["💞","романтично","Хочу романтики"],["💻","для работы","Хочу поработать"],["🌳","на природе","Хочу на природу"]];
+const OPTS=[["🤫","тихо","Хочу тишины"],["🛋️","уютно","Хочу уюта"],["🎉","весело","Хочу веселья"],["⚡","суета","Хочу суеты"],["🔊","шумно","Хочу шума"],["💞","романтично","Хочу романтики"],["💻","для работы","Хочу поработать"]];
 const TAGEMO={};OPTS.forEach(([e,t])=>TAGEMO[t]=e);
 let chipsOpen=false,chipEls=null;
 function drawChips(){
@@ -169,7 +170,7 @@ function select(id){setCollapsed(false);
   const p=places.find(x=>x.id===id);if(p)map.setLocation({center:p.c,duration:300});
   drawSheet();
 }
-function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${TAGEMO[t]||''} ${t}</button>`).join('')}</div><textarea id="rv" rows="2" placeholder="Отзыв о месте"></textarea>`}
+function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${t}</button>`).join('')}</div><textarea id="rv" rows="2" placeholder="Отзыв о месте"></textarea>`}
 function bind(s){
   const rv=$('rv');if(rv){rv.value=reviewText;rv.oninput=()=>{reviewText=rv.value};rv.onfocus=()=>setTimeout(()=>rv.scrollIntoView({block:'center',behavior:'smooth'}),350)}
   s.querySelectorAll('.mood').forEach(b=>b.onclick=()=>{pm=pm===+b.dataset.m?null:+b.dataset.m;keepName();drawSheet()});
@@ -386,7 +387,7 @@ $('grab').onclick=()=>setCollapsed(!$('sheet').classList.contains('collapsed'));
 let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 drawChips();
-say('Версия 11 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 12 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
