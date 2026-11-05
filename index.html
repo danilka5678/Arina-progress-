@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:dark;--bg:#030812;--tx:#e8f6ff;--mut:#86b9ea;--acc:#0ECCED;--bd:rgba(14,204,237,.26);--danger:#ff7a7a;--tile:rgba(4,55,128,.55);--cond:"Oswald","Bebas Neue","Arial Narrow","Avenir Next Condensed",system-ui,sans-serif;--ease:cubic-bezier(.22,1,.36,1);
---gloss:linear-gradient(145deg,rgba(14,204,237,.30),rgba(4,55,128,.66) 42%,rgba(2,7,100,.76));--cta:linear-gradient(135deg,#0ECCED,#4db8ff 55%,#0ECCED)}
+--gloss:linear-gradient(145deg,rgba(14,204,237,.26),rgba(4,55,128,.42) 42%,rgba(2,7,100,.48));--cta:linear-gradient(135deg,#0ECCED,#4db8ff 55%,#0ECCED)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
 body{font:16px/1.4 ui-rounded,"SF Pro Rounded",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
@@ -17,7 +17,7 @@ body{font:16px/1.4 ui-rounded,"SF Pro Rounded",-apple-system,system-ui,"Segoe UI
 #msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mut);background:radial-gradient(80% 50% at 50% 0%,rgba(2,94,196,.5),transparent 70%),var(--bg);z-index:3}
 #top{position:absolute;top:0;left:0;right:0;z-index:5;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 0;pointer-events:none}
 #top>*{pointer-events:auto}
-header{position:relative;overflow:hidden;display:flex;gap:6px;padding:6px;border-radius:24px;background:linear-gradient(120deg,rgba(2,7,100,.92),rgba(3,8,18,.9));border:1px solid var(--bd);box-shadow:0 0 26px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.12)}
+header{position:relative;overflow:hidden;display:flex;gap:6px;padding:6px;border-radius:24px;background:linear-gradient(120deg,rgba(2,7,100,.5),rgba(3,8,18,.42));-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border:1px solid var(--bd);box-shadow:0 0 26px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.12)}
 header::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(14,204,237,.22) 50%,transparent 65%);transform:translateX(-120%);animation:sweep 7s ease-in-out infinite;pointer-events:none;will-change:transform}
 @keyframes sweep{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
 input{flex:1;min-width:0;font:inherit;padding:10px 14px;border:1px solid var(--bd);border-radius:16px;background:transparent;color:inherit}
@@ -29,7 +29,7 @@ button.ghost{background:var(--gloss);color:var(--tx);box-shadow:inset 0 1px 0 rg
 button:disabled{opacity:.4}
 #chips{display:flex;gap:8px;overflow-x:auto;margin:10px -12px 0;padding:2px 12px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent)}
 #chips::-webkit-scrollbar{display:none}
-.chip{flex:0 0 auto;white-space:nowrap;border:1px solid var(--bd);background:linear-gradient(145deg,rgba(14,204,237,.22),rgba(3,8,18,.9) 58%);background-clip:padding-box;color:var(--tx);border-radius:999px;padding:8px 15px;font-size:15px;box-shadow:0 0 16px rgba(2,94,196,.4),inset 0 1px 0 rgba(255,255,255,.15)}
+.chip{flex:0 0 auto;white-space:nowrap;border:1px solid var(--bd);background:linear-gradient(145deg,rgba(14,204,237,.24),rgba(3,8,18,.55) 58%);background-clip:padding-box;color:var(--tx);border-radius:999px;padding:8px 15px;font-size:15px;box-shadow:0 0 16px rgba(2,94,196,.4),inset 0 1px 0 rgba(255,255,255,.15)}
 .chip.on{background:var(--cta);color:#030812;border-color:transparent}
 .chip.hide{display:none}
 .chip.opt{animation:slideIn .55s var(--ease) both;animation-delay:calc(var(--i,0)*50ms)}
@@ -50,25 +50,18 @@ button:disabled{opacity:.4}
 .dot.me::after{content:"";position:absolute;inset:-14px;border-radius:50%;background:rgba(14,204,237,.3);animation:halo 2s infinite}
 @keyframes halo{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:0}}
 .dot.found{background:#ff4d6d}
-#info{position:fixed;left:12px;right:12px;top:calc(124px + env(safe-area-inset-top,0px));z-index:20;background:radial-gradient(80% 90% at 0% 0%,rgba(14,204,237,.32),transparent 60%),linear-gradient(160deg,#043780,#020764 70%);border:1px solid rgba(14,204,237,.32);border-radius:22px;padding:14px 44px 14px 16px;box-shadow:0 10px 34px rgba(0,0,0,.55),0 0 26px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.18);max-height:40%;overflow:auto;animation:drop .45s var(--ease)}
-@keyframes drop{from{opacity:0;transform:translateY(-14px) scale(.97)}to{opacity:1;transform:none}}
-#info[hidden]{display:none}
-#info h3{margin:0 0 4px;font-family:var(--cond);font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-#info .row{font-size:14px;margin-top:4px}
-#info a,.rowlink a{color:var(--acc);font-weight:600}
-#info .x{position:absolute;top:8px;right:8px;width:34px;height:34px;padding:0;border-radius:50%;background:var(--gloss);color:var(--tx);font-size:20px}
-#sheet{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;max-height:62vh;border-radius:28px 28px 0 0;border-top:1px solid rgba(14,204,237,.34);padding:0 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#043780 0%,#020764 38%,#030812 100%);box-shadow:0 -8px 34px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.25);transform:translateY(0);transition:transform .55s var(--ease);will-change:transform}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;max-height:62vh;border-radius:28px 28px 0 0;padding:0 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(4,55,128,.58) 0%,rgba(2,7,100,.52) 40%,rgba(3,8,18,.78) 100%);-webkit-backdrop-filter:blur(18px) saturate(1.35);backdrop-filter:blur(18px) saturate(1.35);box-shadow:0 -8px 34px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.25);transform:translateY(0);transition:transform .55s var(--ease);will-change:transform}
 #sheet.collapsed{transform:translateY(var(--off,0px))}
 #sheet.drag{transition:none}
-#sheet::after{content:"";position:absolute;left:0;right:0;top:100%;height:260px;background:#030812}
+#sheet::after{content:"";position:absolute;left:0;right:0;top:100%;height:260px;background:rgba(3,8,18,.8)}
 #sheen{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
 #sheen::before{content:"";position:absolute;inset:-30%;background:radial-gradient(38% 36% at 28% 18%,rgba(14,204,237,.38),transparent 70%),radial-gradient(40% 40% at 82% 52%,rgba(2,94,196,.55),transparent 70%);animation:drift 12s ease-in-out infinite alternate;will-change:transform}
 @keyframes drift{from{transform:translate3d(-8%,-4%,0) rotate(0)}to{transform:translate3d(8%,6%,0) rotate(8deg)}}
 #grab,#sheetbody,#ymlink{position:relative;z-index:1}
 #grab{flex:0 0 auto;padding:12px 0 14px;cursor:pointer;touch-action:none}
 #grab i{display:block;width:48px;height:5px;border-radius:3px;background:linear-gradient(90deg,rgba(14,204,237,.3),rgba(14,204,237,.9),rgba(14,204,237,.3));margin:0 auto}
-#sheetbody{flex:1 1 auto;min-height:0;overflow:auto;padding:4px;margin:0 -4px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-#ymlink{position:absolute;left:12px;top:-58px;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--gloss);background-clip:padding-box;border:1px solid var(--bd);box-shadow:0 0 18px rgba(2,94,196,.65),inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer;user-select:none}
+#sheetbody{flex:1 1 auto;min-height:0;overflow:auto;padding:16px 4px 20px;margin:-6px -4px 0;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 16px,#000 calc(100% - 22px),transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 16px,#000 calc(100% - 22px),transparent 100%);-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#ymlink{position:absolute;left:12px;top:-58px;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--acc);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);background:var(--gloss);background-clip:padding-box;border:1px solid var(--bd);box-shadow:0 0 18px rgba(2,94,196,.65),inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer;user-select:none}
 #sheet h2{font-family:var(--cond);font-size:28px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin:0 0 4px}
 .hint{background:var(--gloss);color:var(--tx);padding:14px 16px;border-radius:18px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 .mut{color:var(--mut);font-size:13px}
@@ -84,6 +77,13 @@ textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(14,204,237,.35)
 .btn{width:100%;margin-top:12px;padding:14px;border-radius:18px;font-size:19px}
 .del{color:var(--danger);margin-top:8px;width:100%;background:transparent}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#loc{padding:0;width:46px;display:flex;align-items:center;justify-content:center;color:var(--acc)}
+svg.ic{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chip.emo{width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;text-transform:none;border-radius:50%}
+.infbox{background:var(--gloss);border-radius:16px;padding:10px 12px;margin-bottom:10px;font-size:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.infbox[hidden]{display:none}
+.infbox .row{margin:3px 0}
+.infbox a{color:var(--acc);font-weight:600}
 </style>
 </head>
 <body>
@@ -93,13 +93,12 @@ textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(14,204,237,.35)
     <header>
       <input id="q" type="search" placeholder="Поиск адреса">
       <button id="go">Найти</button>
-      <button id="loc" class="ghost" aria-label="Моё местоположение">📍</button>
+      <button id="loc" class="ghost" aria-label="Моё местоположение"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.6"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg></button>
     </header>
     <div class="chips" id="chips"></div>
   </div>
 </div>
-<div id="info" hidden></div>
-<div id="sheet"><div id="sheen"></div><a id="ymlink" role="button" aria-label="Открыть в Яндекс Картах">🧭</a><div id="grab" role="button" aria-label="Свернуть или развернуть"><i></i></div><div id="sheetbody"><div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div></div></div>
+<div id="sheet"><div id="sheen"></div><a id="ymlink" role="button" aria-label="Открыть в Яндекс Картах"><svg class="ic" viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.2l6.6 3.2 3.2 6.6z"/></svg></a><div id="grab" role="button" aria-label="Свернуть или развернуть"><i></i></div><div id="sheetbody"><div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div></div></div>
 
 <script>
 const MAP_KEY = '585f43bd-1508-4be9-ab2f-0736c802dda6'; // JavaScript API
@@ -124,7 +123,8 @@ function pin(cls){const o=document.createElement('div');o.className='mpin';const
 function dot(cls){const d=document.createElement('div');d.className='dot '+(cls||'');return d}
 
 function passMood(p){if(moodFilter==null)return true;const a=avg(p);return a!=null&&Math.round(a)===moodFilter}
-const OPTS=[["Хочу тишины","тихо"],["Хочу уюта","уютно"],["Хочу веселья","весело"],["Хочу суеты","суета"],["Хочу шума","шумно"],["Хочу романтики","романтично"],["Хочу поработать","для работы"],["Хочу на природу","на природе"]];
+const OPTS=[["🤫","тихо","Хочу тишины"],["🛋️","уютно","Хочу уюта"],["🎉","весело","Хочу веселья"],["⚡","суета","Хочу суеты"],["🔊","шумно","Хочу шума"],["💞","романтично","Хочу романтики"],["💻","для работы","Хочу поработать"],["🌳","на природе","Хочу на природу"]];
+const TAGEMO={};OPTS.forEach(([e,t])=>TAGEMO[t]=e);
 let chipsOpen=false,chipEls=null;
 function drawChips(){
   const c=$('chips');
@@ -134,8 +134,8 @@ function drawChips(){
     const ch=document.createElement('span');ch.className='chev';all.appendChild(ch);
     all.onclick=()=>{chipsOpen=!chipsOpen;if(chipsOpen)c.scrollTo({left:0,behavior:'smooth'});drawChips()};
     c.appendChild(all);
-    chipEls={all,ch,opts:OPTS.map(([l,t])=>{
-      const b=document.createElement('button');b.className='chip opt hide';b.textContent=l;
+    chipEls={all,ch,opts:OPTS.map(([e,t,l])=>{
+      const b=document.createElement('button');b.className='chip opt emo hide';b.textContent=e;b.title=l;b.setAttribute('aria-label',l);
       b.onclick=()=>{filt=filt===t?null:t;drawChips();refreshPins()};
       c.appendChild(b);return [b,t]})};
   }
@@ -169,7 +169,7 @@ function select(id){setCollapsed(false);
   const p=places.find(x=>x.id===id);if(p)map.setLocation({center:p.c,duration:300});
   drawSheet();
 }
-function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${t}</button>`).join('')}</div><textarea id="rv" rows="2" placeholder="Отзыв о месте"></textarea>`}
+function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${TAGEMO[t]||''} ${t}</button>`).join('')}</div><textarea id="rv" rows="2" placeholder="Отзыв о месте"></textarea>`}
 function bind(s){
   const rv=$('rv');if(rv){rv.value=reviewText;rv.oninput=()=>{reviewText=rv.value};rv.onfocus=()=>setTimeout(()=>rv.scrollIntoView({block:'center',behavior:'smooth'}),350)}
   s.querySelectorAll('.mood').forEach(b=>b.onclick=()=>{pm=pm===+b.dataset.m?null:+b.dataset.m;keepName();drawSheet()});
@@ -188,8 +188,8 @@ function drawSheet(){
 function drawSheetRaw(){
   const s=$('sheetbody');
   if(draft){
-    s.innerHTML=`<h2>Новое место</h2><div class="mut" id="ad" style="margin-bottom:8px"></div><input id="nm" placeholder="Название"><div class="mut" style="margin-top:6px">Какая тут атмосфера?</div>${moodButtons()}<button class="btn" id="save" ${pm?'':'disabled'}>Сохранить место</button><button class="ghost del" id="cancel" style="color:var(--tx)">Отмена</button>`;
-    $('nm').value=draftName;$('ad').textContent='📍 '+draftAddr;
+    s.innerHTML=`<h2>Новое место</h2><div class="mut" id="ad" style="margin-bottom:8px"></div><div id="inf" class="infbox" hidden></div><input id="nm" placeholder="Название"><div class="mut" style="margin-top:6px">Какая тут атмосфера?</div>${moodButtons()}<button class="btn" id="save" ${pm?'':'disabled'}>Сохранить место</button><button class="ghost del" id="cancel" style="color:var(--tx)">Отмена</button>`;
+    $('nm').value=draftName;$('ad').textContent='📍 '+draftAddr;renderDraftInfo();
     bind(s);
     $('cancel').onclick=()=>{clearDraft();draftName='';drawSheet()};
     $('save').onclick=()=>{
@@ -212,20 +212,20 @@ function drawSheetRaw(){
 }
 
 function ymapsUrl(name,addr,c){return 'https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z=17&text='+encodeURIComponent((name||'')+(addr?', '+addr:''))}
-function hideInfo(){$('info').hidden=true}
-function showInfo(d){
-  const b=$('info');b.textContent='';b.hidden=false;b.style.top=($('top').getBoundingClientRect().bottom+8)+'px';
-  const x=document.createElement('button');x.className='x';x.textContent='×';x.setAttribute('aria-label','Закрыть');x.onclick=hideInfo;b.appendChild(x);
-  const h=document.createElement('h3');h.textContent=d.title||'Место';b.appendChild(h);
-  const add=(t,cls)=>{if(!t)return null;const r=document.createElement('div');r.className='row '+(cls||'');r.textContent=t;b.appendChild(r);return r};
-  add(d.cat);
-  add(d.addr&&'📍 '+d.addr);
-  add(d.hours&&'🕒 '+d.hours);
+function hideInfo(){}
+let draftInfo=null;
+function renderDraftInfo(){
+  const b=$('inf');if(!b)return;
+  b.textContent='';const d=draftInfo;
+  if(!d){b.hidden=true;return}
+  const add=t=>{const r=document.createElement('div');r.className='row';r.textContent=t;b.appendChild(r);return r};
+  if(d.cat)add(d.cat);
+  if(d.hours)add('🕒 '+d.hours);
   if(d.phone){const r=add('📞 ');const a=document.createElement('a');a.textContent=d.phone;a.href='tel:'+d.phone.replace(/[^+\d]/g,'');r.appendChild(a)}
   if(d.url&&/^https?:\/\//.test(d.url)){const r=add('🌐 ');const a=document.createElement('a');a.textContent=d.url.replace(/^https?:\/\//,'').slice(0,40);a.href=d.url;a.target='_blank';a.rel='noopener';r.appendChild(a)}
   if(d.link){const r=add('🗺 ');const a=document.createElement('a');a.textContent='Рейтинг и отзывы в Яндекс Картах';a.href=d.link;a.target='_blank';a.rel='noopener';r.appendChild(a)}
-  if(d.busy)add('Загружаю описание…','mut');
-  if(d.src)add('Источник: '+d.src,'mut');
+  if(d.busy){const r=add('Загружаю описание…');r.className+=' mut'}
+  b.hidden=!b.childNodes.length;
 }
 async function findOrg(c,hotName){
   if(!lib.search)return null;
@@ -248,7 +248,6 @@ async function tapPlace(c,obj){
   const hp=(obj&&obj.entity&&obj.entity.properties)||{};
   const hotName=String(hp.name||hp.title||(hp.hint&&hp.hint.title)||'');
   startDraft(c,hotName,'Определяю адрес…');
-  showInfo({title:hotName||'Определяю место…',busy:true});
   const [ar,or]=await Promise.allSettled([revGeocode(c),findOrg(c,hotName)]);
   if(draft!==c)return;
   const a=ar.status==='fulfilled'?ar.value:null,o=or.status==='fulfilled'?or.value:null;
@@ -256,15 +255,14 @@ async function tapPlace(c,obj){
   draftAddr=a?a.full:'Адрес не найден, будут координаты';
   draftShort=(o&&o.name)||hotName||(a&&a.short)||'';
   if(!draftName.trim()||draftName===hotName)draftName=draftShort;
+  draftInfo=o?{cat:o.cat,hours:o.hours,phone:o.phone,url:o.url,link:ymapsUrl(o.name,(a&&a.full)||o.addr,c)}:{link:ymapsUrl(hotName||(a&&a.short)||'',a?a.full:'',c)};
   drawSheet();
-  if(o)showInfo({title:o.name,cat:o.cat,addr:(a&&a.full)||o.addr,hours:o.hours,phone:o.phone,url:o.url,link:ymapsUrl(o.name,(a&&a.full)||o.addr,c),src:'поиск Яндекса'});
-  else showInfo({title:hotName||(a&&a.short)||'Место на карте',addr:a&&a.full,link:ymapsUrl(hotName||(a&&a.short)||'',a?a.full:'',c),src:hotName?'название с карты (описание не найдено)':'адрес (организацию рядом найти не удалось)'});
 }
-let draftAddr='',draftShort='';
 function startDraft(c,name,addr){setCollapsed(false);
   sel=null;refreshPins();clearDraft();pm=null;pt=null;reviewText='';
   draft=c;draftName=name||'';draftShort=name||'';draftAddr=addr||'Определяю адрес…';
   draftMk=new lib.YMapMarker({coordinates:c},pin('draft'));map.addChild(draftMk);
+  draftInfo=(addr&&!/^Определяю/.test(addr))?{link:ymapsUrl(name||'',addr,c)}:{busy:true};
   drawSheet();
   if(addr)return;
   revGeocode(c).then(r=>{
@@ -388,7 +386,7 @@ $('grab').onclick=()=>setCollapsed(!$('sheet').classList.contains('collapsed'));
 let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 drawChips();
-say('Версия 10 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 11 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
