@@ -7,28 +7,41 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--bg:#030812;--card:#020764;--tx:#e8f6ff;--mut:#86b9ea;--acc:#0ECCED;--bd:rgba(14,204,237,.22);--danger:#ff7a7a;--glass:rgba(3,8,18,.74);--tile:rgba(4,55,128,.55);--cond:"Oswald","Bebas Neue","Arial Narrow","Avenir Next Condensed",system-ui,sans-serif}
+:root{color-scheme:dark;--bg:#030812;--tx:#e8f6ff;--mut:#86b9ea;--acc:#0ECCED;--bd:rgba(14,204,237,.24);--danger:#ff7a7a;--glass:rgba(3,8,18,.72);--tile:rgba(4,55,128,.55);--cond:"Oswald","Bebas Neue","Arial Narrow","Avenir Next Condensed",system-ui,sans-serif;--ease:cubic-bezier(.22,1,.36,1);
+--gloss:linear-gradient(145deg,rgba(14,204,237,.30),rgba(4,55,128,.62) 42%,rgba(2,7,100,.72));--cta:linear-gradient(135deg,#0ECCED,#4db8ff 55%,#0ECCED)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
 body{font:16px/1.4 ui-rounded,"SF Pro Rounded",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;overflow:hidden}
 #mapwrap{position:relative;flex:1;min-height:0}
 #map{position:absolute;inset:0}
-#msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mut);background:var(--bg);z-index:3}
+#msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mut);background:radial-gradient(80% 50% at 50% 0%,rgba(2,94,196,.5),transparent 70%),var(--bg);z-index:3}
 #top{position:absolute;top:0;left:0;right:0;z-index:5;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 0;pointer-events:none}
 #top>*{pointer-events:auto}
-header{display:flex;gap:6px;padding:6px;border-radius:24px;background:var(--glass);border:1px solid var(--bd);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 0 24px rgba(2,94,196,.4)}
+header{position:relative;overflow:hidden;display:flex;gap:6px;padding:6px;border-radius:24px;background:linear-gradient(120deg,rgba(2,7,100,.82),rgba(3,8,18,.78));border:1px solid var(--bd);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 0 26px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.12)}
+header::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(14,204,237,.22) 50%,transparent 65%);transform:translateX(-120%);animation:sweep 7s ease-in-out infinite;pointer-events:none}
+@keyframes sweep{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
 input{flex:1;min-width:0;font:inherit;padding:10px 14px;border:1px solid var(--bd);border-radius:16px;background:transparent;color:inherit}
 input::placeholder,textarea::placeholder{color:var(--mut)}
-header input{border:0}
-button{font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:10px 16px;border:0;border-radius:16px;background:var(--acc);color:#030812;cursor:pointer}
-button.ghost{background:var(--tile);color:var(--tx)}
+header input{border:0;position:relative;z-index:1}
+button{font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:10px 16px;border:0;border-radius:16px;background:var(--cta);background-size:200% 100%;color:#030812;cursor:pointer;transition:transform .15s var(--ease),box-shadow .2s,opacity .2s;position:relative;z-index:1}
+button:active{transform:scale(.95)}
+button.ghost{background:var(--gloss);color:var(--tx);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 button:disabled{opacity:.4}
 .chips{display:flex;gap:8px;flex-wrap:wrap;padding:10px 0 0}
-.chip{border:1px solid var(--bd);background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--tx);border-radius:999px;padding:8px 14px;font-size:15px;box-shadow:0 0 14px rgba(2,94,196,.35)}
-.chip.on{background:var(--acc);color:#030812;border-color:var(--acc)}
-.tags .chip{background:var(--tile);box-shadow:none;backdrop-filter:none}
-.tags .chip.on{background:var(--acc);color:#030812}
-.mpin{width:0;height:0;position:relative;transition:opacity .2s}
+.chip{border:1px solid var(--bd);background:linear-gradient(145deg,rgba(14,204,237,.2),rgba(3,8,18,.78) 55%);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--tx);border-radius:999px;padding:8px 14px;font-size:15px;box-shadow:0 0 16px rgba(2,94,196,.4),inset 0 1px 0 rgba(255,255,255,.15)}
+.chip.on{background:var(--cta);color:#030812;border-color:transparent}
+.tags .chip{background:var(--gloss);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.tags .chip.on{background:var(--cta)}
+#strip{max-height:0;opacity:0;overflow:hidden;transition:max-height .45s var(--ease),opacity .3s,margin .45s var(--ease)}
+#strip.open{max-height:120px;opacity:1;margin-top:10px}
+#moodstrip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#moodstrip::-webkit-scrollbar{display:none}
+.mi{flex:0 0 auto;width:68px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;border-radius:20px;background:var(--gloss);border:1px solid var(--bd);box-shadow:0 0 14px rgba(2,94,196,.4),inset 0 1px 0 rgba(255,255,255,.25);scroll-snap-align:start;color:var(--tx);text-transform:none}
+.mi .e{font-size:28px;line-height:1.1}
+.mi .l{font-family:var(--cond);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.mi.on{background:var(--cta);color:#030812;box-shadow:0 0 20px rgba(14,204,237,.6)}
+.mpin{width:0;height:0;position:relative;transition:opacity .2s;animation:pin .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes pin{from{transform:scale(0)}to{transform:scale(1)}}
 .pb{position:absolute;left:-16px;top:-38px;width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.5),0 0 12px rgba(14,204,237,.5);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .pb::after{content:"";position:absolute;inset:-10px}
 .pb .f{transform:rotate(45deg);font-size:16px;line-height:1}
@@ -39,34 +52,37 @@ button:disabled{opacity:.4}
 .dot.me::after{content:"";position:absolute;inset:-14px;border-radius:50%;background:rgba(14,204,237,.3);animation:halo 2s infinite}
 @keyframes halo{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:0}}
 .dot.found{background:#ff4d6d}
-#info,#moodpop{position:fixed;left:12px;right:12px;top:calc(124px + env(safe-area-inset-top,0px));z-index:20;background:linear-gradient(160deg,#043780,#020764);border:1px solid rgba(14,204,237,.3);border-radius:20px;padding:14px 44px 14px 16px;box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 24px rgba(2,94,196,.4);max-height:44%;overflow:auto}
-#info[hidden],#moodpop[hidden]{display:none}
-#moodpop{padding-right:16px}
-#info h3,#moodpop .pt{margin:0 0 4px;font-family:var(--cond);font-size:21px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+#info{position:fixed;left:12px;right:12px;top:calc(124px + env(safe-area-inset-top,0px));z-index:20;background:radial-gradient(80% 90% at 0% 0%,rgba(14,204,237,.32),transparent 60%),linear-gradient(160deg,#043780,#020764 70%);border:1px solid rgba(14,204,237,.32);border-radius:22px;padding:14px 44px 14px 16px;box-shadow:0 10px 34px rgba(0,0,0,.55),0 0 26px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.18);max-height:40%;overflow:auto;animation:drop .4s var(--ease)}
+@keyframes drop{from{opacity:0;transform:translateY(-12px) scale(.97)}to{opacity:1;transform:none}}
+#info[hidden]{display:none}
+#info h3{margin:0 0 4px;font-family:var(--cond);font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 #info .row{font-size:14px;margin-top:4px}
 #info a,.rowlink a{color:var(--acc);font-weight:600}
-#info .x{position:absolute;top:8px;right:8px;width:34px;height:34px;padding:0;border-radius:50%;background:var(--tile);color:var(--tx);font-size:20px}
-.popbtns{display:flex;gap:8px}
-.popbtns button{flex:1}
-#sheet{display:flex;flex-direction:column;max-height:56%;margin-top:-28px;background:linear-gradient(180deg,#020764 0%,#030812 100%);border-radius:28px 28px 0 0;border-top:1px solid rgba(14,204,237,.3);box-shadow:0 -8px 30px rgba(2,94,196,.4);padding:0 16px calc(14px + env(safe-area-inset-bottom,0px));position:relative;z-index:6}
-#sheet.collapsed{padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
-#grab{padding:10px 0 12px;cursor:pointer;touch-action:none}
-#grab i{display:block;width:46px;height:5px;border-radius:3px;background:rgba(14,204,237,.55);margin:0 auto}
-#sheetbody{overflow:auto}
-#sheet.collapsed #sheetbody{display:none}
+#info .x{position:absolute;top:8px;right:8px;width:34px;height:34px;padding:0;border-radius:50%;background:var(--gloss);color:var(--tx);font-size:20px}
+#sheet{display:flex;flex-direction:column;max-height:58%;margin-top:-28px;border-radius:28px 28px 0 0;border-top:1px solid rgba(14,204,237,.34);padding:0 16px calc(14px + env(safe-area-inset-bottom,0px));position:relative;z-index:6;transition:padding .4s var(--ease);
+background:radial-gradient(70% 55% at 12% 0%,rgba(14,204,237,.40),transparent 60%),radial-gradient(70% 60% at 100% 25%,rgba(2,94,196,.62),transparent 62%),linear-gradient(180deg,#043780 0%,#020764 38%,#030812 100%);background-size:170% 170%,170% 170%,100% 100%;animation:sheen 10s ease-in-out infinite alternate;box-shadow:0 -8px 34px rgba(2,94,196,.45),inset 0 1px 0 rgba(255,255,255,.25)}
+@keyframes sheen{0%{background-position:0% 0%,100% 20%,0 0}100%{background-position:100% 40%,0% 70%,0 0}}
+#sheet.collapsed{padding-bottom:calc(2px + env(safe-area-inset-bottom,0px))}
+#grab{padding:12px 0 14px;cursor:pointer;touch-action:none}
+#grab i{display:block;width:48px;height:5px;border-radius:3px;background:linear-gradient(90deg,rgba(14,204,237,.3),rgba(14,204,237,.9),rgba(14,204,237,.3));margin:0 auto}
+#sheetwrap{flex:1 1 auto;min-height:0;display:grid;grid-template-rows:1fr;transition:grid-template-rows .45s var(--ease)}
+#sheet.collapsed #sheetwrap{grid-template-rows:0fr}
+#sheetbody{min-height:0;overflow:auto;transition:opacity .3s}
+#sheet.collapsed #sheetbody{opacity:0;overflow:hidden}
 #sheet h2{font-family:var(--cond);font-size:28px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin:0 0 4px}
-.hint{background:var(--tile);color:var(--mut);padding:14px 16px;border-radius:18px;font-weight:600}
+.hint{background:var(--gloss);color:var(--tx);padding:14px 16px;border-radius:18px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 .mut{color:var(--mut);font-size:13px}
 .bar{height:10px;border-radius:5px;background:rgba(14,204,237,.15);overflow:hidden;margin:8px 0}
-.bar i{display:block;height:100%;border-radius:5px}
+.bar i{display:block;height:100%;border-radius:5px;transition:width .6s var(--ease)}
 .moods{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
-.mood{font-size:30px;line-height:1;padding:12px 0;border-radius:18px;background:var(--tile);border:2px solid transparent;color:inherit}
-.mood.on{border-color:var(--acc);transform:scale(1.06);box-shadow:0 0 16px rgba(14,204,237,.5)}
+.mood{font-size:30px;line-height:1;padding:12px 0;border-radius:18px;background:var(--gloss);border:2px solid transparent;color:inherit;text-transform:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);transition:transform .25s var(--ease),box-shadow .25s,border-color .25s}
+.mood.on{border-color:var(--acc);transform:scale(1.07);box-shadow:0 0 18px rgba(14,204,237,.6),inset 0 1px 0 rgba(255,255,255,.35)}
 .tags{display:flex;gap:8px;flex-wrap:wrap}
-textarea{width:100%;margin-top:12px;font:inherit;padding:12px 14px;border:0;border-radius:16px;background:var(--tile);color:inherit;resize:vertical}
-.rev{font-size:14px;margin-top:6px;padding:8px 10px;border-radius:12px;background:var(--tile)}
+textarea{width:100%;margin-top:12px;font:inherit;padding:12px 14px;border:0;border-radius:16px;background:var(--gloss);color:inherit;resize:vertical;box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+.rev{font-size:14px;margin-top:6px;padding:8px 10px;border-radius:12px;background:var(--gloss)}
 .btn{width:100%;margin-top:12px;padding:14px;border-radius:18px;font-size:19px}
 .del{color:var(--danger);margin-top:8px;width:100%;background:transparent}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -79,11 +95,11 @@ textarea{width:100%;margin-top:12px;font:inherit;padding:12px 14px;border:0;bord
       <button id="loc" class="ghost" aria-label="Моё местоположение">📍</button>
     </header>
     <div class="chips" id="chips"></div>
+    <div id="strip"><div id="moodstrip"></div></div>
   </div>
 </div>
 <div id="info" hidden></div>
-<div id="moodpop" hidden></div>
-<div id="sheet"><div id="grab" role="button" aria-label="Свернуть или развернуть"><i></i></div><div id="sheetbody"><div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div></div></div>
+<div id="sheet"><div id="grab" role="button" aria-label="Свернуть или развернуть"><i></i></div><div id="sheetwrap"><div id="sheetbody"><div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div></div></div></div>
 
 <script>
 const MAP_KEY = '585f43bd-1508-4be9-ab2f-0736c802dda6'; // JavaScript API
@@ -108,30 +124,19 @@ function pin(cls){const o=document.createElement('div');o.className='mpin';const
 function dot(cls){const d=document.createElement('div');d.className='dot '+(cls||'');return d}
 
 function passMood(p){if(moodFilter==null)return true;const a=avg(p);return a!=null&&Math.round(a)===moodFilter}
-function drawMoodPop(){
-  const b=$('moodpop');b.textContent='';
-  const h=document.createElement('div');h.className='pt';h.textContent='Показать места с настроением';b.appendChild(h);
-  const g=document.createElement('div');g.className='moods';
-  MOODS.forEach((m,i)=>{
-    const t=document.createElement('button');t.className='mood'+(moodFilter===i+1?' on':'');t.textContent=m;
-    t.onclick=()=>{moodFilter=moodFilter===i+1?null:i+1;drawMoodPop();drawChips();refreshPins()};
-    g.appendChild(t);
-  });
-  b.appendChild(g);
-  const n=document.createElement('div');n.className='mut';n.style.marginBottom='8px';
-  n.textContent=moodFilter==null?'Выберите смайлик, чтобы увидеть только такие места':'Найдено мест: '+places.filter(passMood).length;
-  b.appendChild(n);
-  const r=document.createElement('div');r.className='popbtns';
-  const a=document.createElement('button');a.className='ghost';a.textContent='Сбросить';a.onclick=()=>{moodFilter=null;filt=null;drawMoodPop();drawChips();refreshPins()};
-  const c=document.createElement('button');c.textContent='Готово';c.onclick=()=>{b.hidden=true};
-  r.appendChild(a);r.appendChild(c);b.appendChild(r);
+const MLAB=["ужас","плохо","так себе","норм","хорошо","класс","супер","огонь"];
+function drawStrip(){
+  const b=$('moodstrip');b.textContent='';
+  const mk=(emo,lab,on,fn)=>{const t=document.createElement('button');t.className='mi'+(on?' on':'');const e=document.createElement('span');e.className='e';e.textContent=emo;const l=document.createElement('span');l.className='l';l.textContent=lab;t.appendChild(e);t.appendChild(l);t.onclick=fn;b.appendChild(t)};
+  mk('✨','Все',moodFilter==null,()=>{moodFilter=null;drawStrip();drawChips();refreshPins()});
+  MOODS.forEach((m,i)=>mk(m,MLAB[i],moodFilter===i+1,()=>{moodFilter=moodFilter===i+1?null:i+1;drawStrip();drawChips();refreshPins()}));
 }
 function drawChips(){
   const c=$('chips');c.textContent='';
   const all=document.createElement('button');
   all.className='chip'+(moodFilter!=null||filt==null?' on':'');
-  all.textContent=(moodFilter!=null?MOODS[moodFilter-1]+' ':'')+'Все ▾';
-  all.onclick=()=>{const pop=$('moodpop');if(pop.hidden){hideInfo();drawMoodPop();pop.hidden=false}else pop.hidden=true};
+  all.textContent=(moodFilter!=null?MOODS[moodFilter-1]+' ':'')+'Все '+($('strip').classList.contains('open')?'▴':'▾');
+  all.onclick=()=>{const o=$('strip').classList.toggle('open');if(o){hideInfo();drawStrip()}drawChips()};
   c.appendChild(all);
   [["Хочу тишины","тихо"],["Хочу веселья","весело"]].forEach(([l,t])=>{
     const b=document.createElement('button');b.className='chip'+(filt===t?' on':'');b.textContent=l;
@@ -197,7 +202,7 @@ function drawSheet(){
 function ymapsUrl(name,addr,c){return 'https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z=17&text='+encodeURIComponent((name||'')+(addr?', '+addr:''))}
 function hideInfo(){$('info').hidden=true}
 function showInfo(d){
-  const b=$('info');b.textContent='';b.hidden=false;
+  const b=$('info');b.textContent='';b.hidden=false;b.style.top=($('top').getBoundingClientRect().bottom+8)+'px';
   const x=document.createElement('button');x.className='x';x.textContent='×';x.setAttribute('aria-label','Закрыть');x.onclick=hideInfo;b.appendChild(x);
   const h=document.createElement('h3');h.textContent=d.title||'Место';b.appendChild(h);
   const add=(t,cls)=>{if(!t)return null;const r=document.createElement('div');r.className='row '+(cls||'');r.textContent=t;b.appendChild(r);return r};
@@ -244,7 +249,7 @@ async function tapPlace(c,obj){
   else showInfo({title:hotName||(a&&a.short)||'Место на карте',addr:a&&a.full,link:ymapsUrl(hotName||(a&&a.short)||'',a?a.full:'',c),src:hotName?'название с карты (описание не найдено)':'адрес (организацию рядом найти не удалось)'});
 }
 let draftAddr='',draftShort='';
-function startDraft(c,name,addr){setCollapsed(false);$('moodpop').hidden=true;
+function startDraft(c,name,addr){setCollapsed(false);
   sel=null;refreshPins();clearDraft();pm=null;pt=null;reviewText='';
   draft=c;draftName=name||'';draftShort=name||'';draftAddr=addr||'Определяю адрес…';
   draftMk=new lib.YMapMarker({coordinates:c},pin('draft'));map.addChild(draftMk);
@@ -308,6 +313,26 @@ function setMe(c){
   me=new lib.YMapMarker({coordinates:c},dot('me'));map.addChild(me);
   try{localStorage.setItem('moodmap_last',JSON.stringify(c))}catch(e){}
 }
+function styleOpenBtn(){
+  const LAB='Открыть Яндекс Карты';
+  const fix=()=>{
+    const root=$('map');
+    const leaf=[...root.querySelectorAll('*')].find(n=>!n.children.length&&n.textContent.trim()===LAB&&!n.dataset.fixed);
+    if(!leaf)return;
+    leaf.dataset.fixed='1';leaf.style.display='none';
+    let n=leaf.parentElement,box=null;
+    for(let k=0;k<5&&n&&n!==root;k++,n=n.parentElement){
+      const bg=getComputedStyle(n).backgroundColor;
+      if(bg&&bg!=='rgba(0, 0, 0, 0)'&&bg!=='transparent'){box=n;break}
+    }
+    if(box){
+      box.title=LAB;box.setAttribute('aria-label',LAB);
+      Object.assign(box.style,{background:'linear-gradient(145deg,rgba(14,204,237,.35),rgba(3,8,18,.85))',border:'1px solid rgba(14,204,237,.4)',borderRadius:'50%',width:'38px',height:'38px',minWidth:'38px',padding:'0',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 14px rgba(2,94,196,.6)'});
+    }
+  };
+  new MutationObserver(fix).observe($('map'),{childList:true,subtree:true});
+  fix();
+}
 async function init(){
   await ymaps3.ready;lib=ymaps3;
   const {YMap,YMapDefaultSchemeLayer,YMapDefaultFeaturesLayer,YMapListener}=lib;
@@ -322,6 +347,7 @@ async function init(){
   map.addChild(new YMapDefaultSchemeLayer({theme:'dark'}));
   map.addChild(new YMapDefaultFeaturesLayer());
   if(pos)setMe(pos);
+  styleOpenBtn();
   map.addChild(new YMapListener({layer:'any',onClick:(obj,ev)=>{if(obj&&obj.type==='marker')return;if(ev&&ev.coordinates)tapPlace(ev.coordinates,obj)}}));
   places.forEach(addMarker);
 }
@@ -331,11 +357,14 @@ $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('loc').onclick=()=>map?locate():null;
 function setCollapsed(v){$('sheet').classList.toggle('collapsed',v)}
 $('grab').onclick=()=>setCollapsed(!$('sheet').classList.contains('collapsed'));
-let gy=null;
-$('grab').addEventListener('touchstart',e=>{gy=e.touches[0].clientY},{passive:true});
-$('grab').addEventListener('touchend',e=>{if(gy==null)return;const d=e.changedTouches[0].clientY-gy;gy=null;if(Math.abs(d)>25){setCollapsed(d>0);e.preventDefault()}});
+function swipe(el,needTop){
+  let y0=null;
+  el.addEventListener('touchstart',e=>{y0=(needTop&&el.scrollTop>0)?null:e.touches[0].clientY},{passive:true});
+  el.addEventListener('touchend',e=>{if(y0==null)return;const d=e.changedTouches[0].clientY-y0;y0=null;if(Math.abs(d)>30){setCollapsed(d>0);if(!needTop)e.preventDefault()}});
+}
+swipe($('grab'),false);swipe($('sheetbody'),true);
 drawChips();
-say('Версия 8 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 9 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
