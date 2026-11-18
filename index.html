@@ -123,6 +123,10 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 #sug .ic2{position:relative}
 #sug .ck{position:absolute;right:-5px;bottom:-5px;width:20px;height:20px;border-radius:50%;background:#6b7080;border:2px solid #0b1250;display:flex;align-items:center;justify-content:center}
 #sug .ck svg{width:11px;height:11px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round}
+#sug .ic2.org-food{background:#c4572e;color:#fff;border-radius:50%}
+#sug .ic2.org-health{background:#c0505a;color:#fff;border-radius:50%}
+#sug .ic2.org-shop{background:#1f6fe0;color:#fff;border-radius:50%}
+#sug .ic2.org-other{background:#5b6ad0;color:#fff;border-radius:50%}
 </style>
 </head>
 <body>
@@ -409,7 +413,7 @@ function syncX(){$('qx').hidden=!$('q').value}
 function loadHist(){try{return JSON.parse(localStorage.getItem('moodmap_hist')||'[]')}catch(e){return[]}}
 function addHist(it){
   const h=loadHist(),k=h.find(x=>x.full===it.full);
-  if(k){k.n=(k.n||1)+1;k.t=Date.now()}else h.push({c:it.c,title:it.title,sub:it.sub,full:it.full,kind:it.kind,n:1,t:Date.now()});
+  if(k){k.n=(k.n||1)+1;k.t=Date.now()}else h.push({c:it.c,title:it.title,sub:it.sub,addr:it.addr,g:it.g,full:it.full,kind:it.kind,n:1,t:Date.now()});
   h.sort((a,b)=>b.n-a.n||b.t-a.t);
   try{localStorage.setItem('moodmap_hist',JSON.stringify(h.slice(0,30)))}catch(e){}
 }
@@ -417,6 +421,98 @@ function histItems(q){
   const base=myPos||lastC||null;let h=loadHist();
   if(q)h=h.filter(x=>x.full.toLowerCase().includes(q.toLowerCase()));
   return h.slice(0,q?2:6).map(x=>Object.assign({},x,{hist:true,local:true,d:base?distM(base,x.c):null}));
+}
+const ORG_ICON={
+  food:'<svg viewBox="0 0 24 24"><path d="M5 9h11v4a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5zM16 10h2a2.5 2.5 0 0 1 0 5h-2M8 4v2M12 4v2"/></svg>',
+  health:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  shop:'<svg viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7zM9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+  other:'<svg viewBox="0 0 24 24"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>'};
+const CATS=[
+  {k:['кафе','кофе','кофейня'],q:'["amenity"="cafe"]',g:'food'},
+  {k:['ресторан'],q:'["amenity"="restaurant"]',g:'food'},
+  {k:['фастфуд','шаурма','бургер','пицца','бургерная'],q:'["amenity"="fast_food"]',g:'food'},
+  {k:['бар','паб'],q:'["amenity"~"^(bar|pub)$"]',g:'food'},
+  {k:['пекарня','булочная','хлеб'],q:'["shop"="bakery"]',g:'food'},
+  {k:['аптека'],q:'["amenity"="pharmacy"]',g:'health'},
+  {k:['больница','клиника','поликлиника'],q:'["amenity"~"^(hospital|clinic)$"]',g:'health'},
+  {k:['магазин','продукты','супермаркет'],q:'["shop"~"^(supermarket|convenience|mall)$"]',g:'shop'},
+  {k:['банк'],q:'["amenity"="bank"]',g:'shop'},
+  {k:['банкомат'],q:'["amenity"="atm"]',g:'shop'},
+  {k:['кино','кинотеатр'],q:'["amenity"="cinema"]',g:'other'},
+  {k:['азс','заправка'],q:'["amenity"="fuel"]',g:'other'},
+  {k:['отель','гостиница'],q:'["tourism"~"^(hotel|hostel|guest_house)$"]',g:'other'},
+  {k:['парк','сквер'],q:'["leisure"="park"]',g:'other'},
+  {k:['фитнес','спортзал'],q:'["leisure"="fitness_centre"]',g:'other'},
+  {k:['парикмахерская','барбершоп','салон красоты'],q:'["shop"~"^(hairdresser|beauty)$"]',g:'other'}];
+const OSM_RU={cafe:'Кафе',restaurant:'Ресторан',fast_food:'Фастфуд',bar:'Бар',pub:'Паб',pharmacy:'Аптека',bank:'Банк',atm:'Банкомат',cinema:'Кинотеатр',fuel:'АЗС',hospital:'Больница',clinic:'Клиника',dentist:'Стоматология',supermarket:'Супермаркет',convenience:'Магазин',mall:'Торговый центр',bakery:'Пекарня',hairdresser:'Парикмахерская',beauty:'Салон красоты',hotel:'Отель',hostel:'Хостел',park:'Парк',fitness_centre:'Фитнес',clothes:'Одежда',electronics:'Электроника',books:'Книги'};
+function catFor(t){
+  const n=t.toLowerCase().trim();if(n.length<3)return null;
+  return CATS.find(c=>c.k.some(k=>k.startsWith(n)||n.startsWith(k)))||null;
+}
+function osmGroup(tg){
+  const a=tg.amenity,sh=tg.shop;
+  if(['cafe','restaurant','fast_food','bar','pub'].includes(a)||sh==='bakery')return 'food';
+  if(['pharmacy','hospital','clinic','dentist','doctors'].includes(a))return 'health';
+  if(sh||['bank','atm'].includes(a))return 'shop';
+  return 'other';
+}
+async function overpass(q){
+  const body='data='+encodeURIComponent(q);
+  for(const u of ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter']){
+    try{
+      const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),9000);
+      const r=await fetch(u,{method:'POST',body,headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ctl.signal});
+      clearTimeout(tm);if(!r.ok)continue;
+      return (await r.json()).elements||[];
+    }catch(e){}
+  }
+  return [];
+}
+function rxCase(t){return t.replace(/[^0-9A-Za-zА-Яа-яЁё\s-]/g,'').split('').map(ch=>{const l=ch.toLowerCase(),u=ch.toUpperCase();return l===u?ch:'['+l+u+']'}).join('')}
+async function orgSearch(text){
+  const c=myPos||lastC;if(!c)return[];
+  const cat=catFor(text);
+  let out=[];
+  try{
+    if(lib&&lib.search){
+      const r=await lib.search({text:cat?cat.k[0]:text,bounds:[[c[0]-.06,c[1]-.04],[c[0]+.06,c[1]+.04]],limit:15});
+      (Array.isArray(r)?r:(r&&r.features)||[]).forEach(f=>{
+        const g=f.geometry&&f.geometry.coordinates,pr=f.properties||{},cm=pr.CompanyMetaData||{};
+        if(!g||!pr.name)return;
+        const cats=(cm.Categories||[]).map(x=>x&&x.name).filter(Boolean).slice(0,2).join(', ');
+        const addr=pr.description||'';
+        out.push({c:g,title:pr.name,addr,sub:[cats,addr].filter(Boolean).join(' · '),full:pr.name+(addr?', '+addr:''),kind:'org',g:cat?cat.g:'other',local:true,d:distM(c,g)});
+      });
+    }
+  }catch(e){}
+  if(!out.length){
+    const R=cat?5000:6000,ar='(around:'+R+','+c[1]+','+c[0]+')';
+    const q=cat?'[out:json][timeout:9];nwr'+cat.q+'["name"]'+ar+';out center 40;'
+      :'[out:json][timeout:9];(nwr["name"~"'+rxCase(text.trim())+'"]["amenity"]'+ar+';nwr["name"~"'+rxCase(text.trim())+'"]["shop"]'+ar+';);out center 30;';
+    const els=await overpass(q);
+    els.forEach(e=>{
+      const tg=e.tags||{},ll=e.center?[e.center.lon,e.center.lat]:[e.lon,e.lat];
+      if(!tg.name||!ll[0])return;
+      const kind=tg.amenity||tg.shop||tg.tourism||tg.leisure||'',addr=[tg['addr:street'],tg['addr:housenumber']].filter(Boolean).join(', ');
+      out.push({c:ll,title:tg.name,addr,sub:[OSM_RU[kind]||'',addr].filter(Boolean).join(' · '),full:tg.name+(addr?', '+addr:''),kind:'org',g:osmGroup(tg),local:true,d:distM(c,ll)});
+    });
+  }
+  const seen=new Set();
+  return out.filter(x=>{const k=x.title+'|'+x.c.map(v=>v.toFixed(4)).join();if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.d-b.d).slice(0,10);
+}
+async function houseVariants(streetText,num){
+  const c=myPos||lastC||[37.618,55.751],box='&ll='+c[0]+','+c[1]+'&spn=0.6,0.4';
+  const sts=await geoQuery(streetText,box+'&rspn=1',5);
+  const st=sts.find(x=>x.kind==='street');if(!st)return[];
+  const hs=await houseList(st),n=num.toLowerCase();
+  return hs.filter(h=>h.n.toLowerCase().startsWith(n)).slice(0,10).map(h=>{h.it.d=distM(c,h.it.c);h.it.local=true;return h.it});
+}
+async function suggestAll(t){
+  const m=t.match(/^(.*\D)[,\s]+(\d[0-9А-Яа-яA-Za-z\/\-]*)$/);
+  let extra=[];
+  if(m&&m[1].trim().length>=3){try{extra=await houseVariants(m[1].trim(),m[2])}catch(e){}}
+  const base=await suggest(t),seen=new Set(extra.map(x=>x.full));
+  return extra.concat(base.filter(x=>!seen.has(x.full)));
 }
 let streetCtx=null;
 async function pickStreet(it){
@@ -453,7 +549,8 @@ function goTo(it){
   map.setLocation({center:it.c,zoom:17,duration:500});
   if(found)map.removeChild(found);
   found=new lib.YMapMarker({coordinates:it.c},dot('found'));map.addChild(found);
-  startDraft(it.c,it.title,it.full);
+  startDraft(it.c,it.title,it.kind==='org'?(it.addr||'Определяю адрес…'):it.full);
+  if(it.kind==='org'&&!it.addr){const c0=it.c;revGeocode(c0).then(r=>{if(draft===c0&&r){draftAddr=r.full;drawSheet()}}).catch(()=>{})}
 }
 const CLOCK='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 function showSug(list,label){
@@ -464,12 +561,12 @@ function showSug(list,label){
   list.forEach(it=>{
     if(hasOther&&!it.local&&!sepDone){sepDone=true;const g=document.createElement('div');g.className='gl';g.textContent='В других городах';b.appendChild(g)}
     const t=document.createElement('button');t.className='it';
-    const ic=document.createElement('div');ic.className='ic2'+(it.kind==='metro'?' m':'');
-    ic.innerHTML=(KIND_ICON[it.kind]||KIND_ICON.place)+(it.hist?'<i class="ck">'+CLOCK+'</i>':'');t.appendChild(ic);
+    const ic=document.createElement('div');ic.className='ic2'+(it.kind==='metro'?' m':'')+(it.kind==='org'?' org-'+(it.g||'other'):'');
+    ic.innerHTML=(it.kind==='org'?(ORG_ICON[it.g]||ORG_ICON.other):(KIND_ICON[it.kind]||KIND_ICON.place))+(it.hist?'<i class="ck">'+CLOCK+'</i>':'');t.appendChild(ic);
     const tx=document.createElement('div');tx.className='tx';
     const tt=document.createElement('div');tt.className='t';hl(tt,it.title,lastQ);tx.appendChild(tt);
     const lab=(it.kind==='house'||it.kind==='street')?'':(KIND_LABEL[it.kind]||'');
-    const sub=[lab,it.sub].filter(Boolean).join(' · ')+(it.kind==='street'?((lab||it.sub)?' · ':'')+'номера домов':'');
+    const sub=(it.kind==='org'?it.sub:[lab,it.sub].filter(Boolean).join(' · '))+(it.kind==='street'?((lab||it.sub)?' · ':'')+'номера домов':'');
     if(sub){const sd=document.createElement('div');sd.className='s';sd.textContent=sub;tx.appendChild(sd)}
     t.appendChild(tx);
     const ds=document.createElement('div');ds.className='ds';ds.textContent=it.d!=null?fmtD(it.d):'';t.appendChild(ds);
@@ -488,16 +585,22 @@ function onType(){
   if(streetCtx&&t.startsWith(streetCtx.it.full+',')){renderHouses();return}
   streetCtx=null;
   if(!t){const h=histItems('');if(h.length)showSug(h,'Часто ищете');else hideSug();return}
-  if(t.length<3){const h=histItems(t);if(h.length)showSug(h);else hideSug();return}
   const my=++sugSeq;
+  if(t.length<2){const h=histItems(t);if(h.length)showSug(h);else hideSug();return}
+  const h0=histItems(t);if(h0.length)showSug(h0);
   sugTimer=setTimeout(async()=>{
-    try{
-      const list=await suggest(t);
-      if(my!==sugSeq)return;
-      const hist=histItems(t),seen=new Set(hist.map(x=>x.full));
-      showSug(hist.concat(list.filter(x=>!seen.has(x.full))));
-    }catch(e){if(my===sugSeq)hideSug()}
-  },350);
+    let addr=[];
+    try{addr=await suggestAll(t)}catch(e){}
+    if(my!==sugSeq)return;
+    const hist=histItems(t),seenH=new Set(hist.map(x=>x.full));
+    const base=hist.concat(addr.filter(x=>!seenH.has(x.full)));
+    showSug(base);
+    if(t.length>=3){
+      let orgs=[];try{orgs=await orgSearch(t)}catch(e){}
+      if(my!==sugSeq||!orgs.length)return;
+      showSug(catFor(t)?orgs.concat(base):base.slice(0,5).concat(orgs.slice(0,5),base.slice(5)));
+    }
+  },t.length<3?140:260);
 }
 async function search(){
   const t=$('q').value.trim();if(!t)return;
@@ -508,8 +611,13 @@ async function search(){
     if(ex){goTo(ex.it);return}
   }
   try{
-    const list=await suggest(t);
-    if(!list.length)return alert('Ничего не найдено. Уточните адрес.');
+    if(catFor(t)){
+      const orgs=await orgSearch(t);
+      if(!orgs.length)return alert('Рядом ничего не найдено. Попробуйте другое слово.');
+      showSug(orgs);$('q').blur();return;
+    }
+    const list=await suggestAll(t);
+    if(!list.length)return alert('Ничего не найдено. Уточните запрос.');
     const first=(/\d/.test(t)?list[0]:list.find(x=>x.kind!=='house'))||list[0];
     first.kind==='street'?pickStreet(first):goTo(first);
   }catch(e){alert(e.message)}
@@ -603,7 +711,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 18 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 19 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
