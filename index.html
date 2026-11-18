@@ -456,26 +456,43 @@ function osmGroup(tg){
   if(sh||['bank','atm'].includes(a))return 'shop';
   return 'other';
 }
+let orgNote='';
 async function overpass(q){
-  const body='data='+encodeURIComponent(q);
+  const body='data='+encodeURIComponent(q);let err='';
   for(const u of ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter']){
     try{
       const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),9000);
       const r=await fetch(u,{method:'POST',body,headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ctl.signal});
-      clearTimeout(tm);if(!r.ok)continue;
-      return (await r.json()).elements||[];
-    }catch(e){}
+      clearTimeout(tm);
+      if(!r.ok){err='ответ '+r.status;continue}
+      return {els:(await r.json()).elements||[],err:''};
+    }catch(e){err=e&&e.name==='AbortError'?'долго нет ответа':'нет связи'}
   }
-  return [];
+  return {els:[],err};
 }
-function rxCase(t){return t.replace(/[^0-9A-Za-zА-Яа-яЁё\s-]/g,'').split('').map(ch=>{const l=ch.toLowerCase(),u=ch.toUpperCase();return l===u?ch:'['+l+u+']'}).join('')}
+const TR={а:'a',б:'b',в:'v|w',г:'g',д:'d',е:'e|ye|i',ё:'e|yo',ж:'zh|j',з:'z',и:'i|y',й:'y|i|j',к:'k|c',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s|c',т:'t',у:'u|oo',ф:'f|ph',х:'h|kh',ц:'ts|c',ч:'ch',ш:'sh',щ:'sch|shch',ы:'y|i',э:'e',ю:'yu|u',я:'ya|ia|a|ja'};
+const TR2={'ай':'ai|ay|i|igh','ей':'ey|ei|e|ay','ой':'oy|oi|o','ий':'iy|y|i','ый':'yi|y|i','уй':'uy|ui|u'};
+function nameRx(t){
+  const clean=t.toLowerCase().replace(/[^0-9a-zа-яё\s-]/g,'').trim();
+  let cyr='',lat='';
+  for(let i=0;i<clean.length;i++){
+    const ch=clean[i],two=clean.slice(i,i+2);
+    cyr+=(ch.toLowerCase()===ch.toUpperCase())?ch:'['+ch+ch.toUpperCase()+']';
+    if(TR2[two]){lat+='('+TR2[two]+')';cyr+=(()=>{const c=clean[i+1];return '['+c+c.toUpperCase()+']'})();i++;continue}
+    if(ch===' '||ch==='-')lat+='[ -]?';
+    else if(ch==='ь'||ch==='ъ')lat+='';
+    else if(TR[ch])lat+='('+TR[ch]+')';
+    else lat+=ch;
+  }
+  return {cyr,lat};
+}
 async function orgSearch(text){
-  const c=myPos||lastC;if(!c)return[];
+  const c=myPos||lastC;orgNote='';if(!c)return[];
   const cat=catFor(text);
-  let out=[];
+  let out=[],ymErr='';
   try{
     if(lib&&lib.search){
-      const r=await lib.search({text:cat?cat.k[0]:text,bounds:[[c[0]-.06,c[1]-.04],[c[0]+.06,c[1]+.04]],limit:15});
+      const r=await lib.search({text:cat?cat.k[0]:text,bounds:[[c[0]-.1,c[1]-.07],[c[0]+.1,c[1]+.07]],limit:15});
       (Array.isArray(r)?r:(r&&r.features)||[]).forEach(f=>{
         const g=f.geometry&&f.geometry.coordinates,pr=f.properties||{},cm=pr.CompanyMetaData||{};
         if(!g||!pr.name)return;
@@ -483,19 +500,29 @@ async function orgSearch(text){
         const addr=pr.description||'';
         out.push({c:g,title:pr.name,addr,sub:[cats,addr].filter(Boolean).join(' · '),full:pr.name+(addr?', '+addr:''),kind:'org',g:cat?cat.g:'other',local:true,d:distM(c,g)});
       });
-    }
-  }catch(e){}
+      if(!out.length)ymErr='пусто';
+    }else ymErr='недоступен';
+  }catch(e){ymErr=String(e&&e.message||e).slice(0,50)}
+  let osmErr='';
   if(!out.length){
-    const R=cat?5000:6000,ar='(around:'+R+','+c[1]+','+c[0]+')';
-    const q=cat?'[out:json][timeout:9];nwr'+cat.q+'["name"]'+ar+';out center 40;'
-      :'[out:json][timeout:9];(nwr["name"~"'+rxCase(text.trim())+'"]["amenity"]'+ar+';nwr["name"~"'+rxCase(text.trim())+'"]["shop"]'+ar+';);out center 30;';
-    const els=await overpass(q);
-    els.forEach(e=>{
+    const ar='(around:'+(cat?5000:15000)+','+c[1]+','+c[0]+')';
+    let q;
+    if(cat)q='[out:json][timeout:9];nwr'+cat.q+'["name"]'+ar+';out center 40;';
+    else{
+      const n=nameRx(text),P='('+n.cyr+'|'+n.lat+')';
+      q='[out:json][timeout:9];(';
+      ['amenity','shop','tourism','leisure'].forEach(k=>{q+='nwr["name"~"'+P+'",i]["'+k+'"]'+ar+';'});
+      ['amenity','shop'].forEach(k=>{q+='nwr["name:en"~"'+P+'",i]["'+k+'"]'+ar+';'});
+      q+=');out center 30;';
+    }
+    const res=await overpass(q);osmErr=res.err;
+    res.els.forEach(e=>{
       const tg=e.tags||{},ll=e.center?[e.center.lon,e.center.lat]:[e.lon,e.lat];
       if(!tg.name||!ll[0])return;
       const kind=tg.amenity||tg.shop||tg.tourism||tg.leisure||'',addr=[tg['addr:street'],tg['addr:housenumber']].filter(Boolean).join(', ');
       out.push({c:ll,title:tg.name,addr,sub:[OSM_RU[kind]||'',addr].filter(Boolean).join(' · '),full:tg.name+(addr?', '+addr:''),kind:'org',g:osmGroup(tg),local:true,d:distM(c,ll)});
     });
+    if(!out.length)orgNote='Заведения не найдены (Яндекс: '+ymErr+'; OSM: '+(osmErr||'пусто')+')';
   }
   const seen=new Set();
   return out.filter(x=>{const k=x.title+'|'+x.c.map(v=>v.toFixed(4)).join();if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.d-b.d).slice(0,10);
@@ -553,7 +580,7 @@ function goTo(it){
   if(it.kind==='org'&&!it.addr){const c0=it.c;revGeocode(c0).then(r=>{if(draft===c0&&r){draftAddr=r.full;drawSheet()}}).catch(()=>{})}
 }
 const CLOCK='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
-function showSug(list,label){
+function showSug(list,label,foot){
   const b=$('sug');b.textContent='';
   if(label){const g=document.createElement('div');g.className='gl';g.textContent=label;b.appendChild(g)}
   const hasOther=list.some(x=>!x.local);
@@ -573,8 +600,8 @@ function showSug(list,label){
     t.onclick=()=>it.kind==='street'?pickStreet(it):goTo(it);
     b.appendChild(t);
   });
-  b.hidden=!list.length&&!label;
-  if(!list.length)b.hidden=true;
+  if(foot){const g=document.createElement('div');g.className='gl';g.style.textTransform='none';g.style.letterSpacing='0';g.style.fontFamily='inherit';g.textContent=foot;b.appendChild(g)}
+  b.hidden=!list.length&&!label&&!foot;
   fitSug();
 }
 let sugTimer=null,sugSeq=0;
@@ -597,7 +624,8 @@ function onType(){
     showSug(base);
     if(t.length>=3){
       let orgs=[];try{orgs=await orgSearch(t)}catch(e){}
-      if(my!==sugSeq||!orgs.length)return;
+      if(my!==sugSeq)return;
+      if(!orgs.length){if(orgNote)showSug(base,null,orgNote);return}
       showSug(catFor(t)?orgs.concat(base):base.slice(0,5).concat(orgs.slice(0,5),base.slice(5)));
     }
   },t.length<3?140:260);
@@ -613,7 +641,7 @@ async function search(){
   try{
     if(catFor(t)){
       const orgs=await orgSearch(t);
-      if(!orgs.length)return alert('Рядом ничего не найдено. Попробуйте другое слово.');
+      if(!orgs.length)return alert('Рядом ничего не найдено. '+orgNote);
       showSug(orgs);$('q').blur();return;
     }
     const list=await suggestAll(t);
@@ -684,6 +712,11 @@ async function init(){
 $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('q').addEventListener('input',onType);
+let sugBusy=false;
+$('sug').addEventListener('touchstart',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)},{passive:true});
+$('sug').addEventListener('mousedown',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)});
+$('q').addEventListener('blur',()=>setTimeout(()=>{if(!sugBusy&&document.activeElement!==$('q'))hideSug()},250));
+document.addEventListener('touchstart',e=>{if(!$('hdr').contains(e.target)){hideSug();$('q').blur()}},{passive:true});
 $('qx').onclick=()=>{$('q').value='';streetCtx=null;syncX();sugSeq++;$('q').focus();onType()};
 $('q').addEventListener('focus',onType);
 document.addEventListener('click',e=>{if(!$('hdr').contains(e.target))hideSug()});
@@ -711,7 +744,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 19 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 20 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
