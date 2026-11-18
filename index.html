@@ -120,6 +120,9 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 #sug .t b{font-weight:800}
 #sug .s{font-size:13px;color:var(--mut);margin-top:2px}
 #sug .ds{align-self:start;font-size:13px;color:var(--mut);white-space:nowrap;padding-top:2px}
+#sug .ic2{position:relative}
+#sug .ck{position:absolute;right:-5px;bottom:-5px;width:20px;height:20px;border-radius:50%;background:#6b7080;border:2px solid #0b1250;display:flex;align-items:center;justify-content:center}
+#sug .ck svg{width:11px;height:11px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round}
 </style>
 </head>
 <body>
@@ -353,14 +356,32 @@ async function geoQuery(text,extra,n){
     return{c:[lon,lat],title:g.name,sub:g.description||'',full:g.metaDataProperty.GeocoderMetaData.text,kind:g.metaDataProperty.GeocoderMetaData.kind};
   });
 }
+const houseCache={};
+async function houseList(it){
+  if(houseCache[it.full])return houseCache[it.full];
+  const pre=it.full+', ';
+  const arr=await geoQuery(it.full+',','&kind=house&ll='+it.c[0]+','+it.c[1]+'&spn=0.05,0.04&rspn=1',50);
+  const seen=new Set(),out=[];
+  arr.forEach(h=>{if(h.kind!=='house'||!h.full.startsWith(pre)||seen.has(h.full))return;seen.add(h.full);out.push({it:h,n:h.full.slice(pre.length)})});
+  out.sort((x,y)=>(parseInt(x.n)||0)-(parseInt(y.n)||0)||x.n.localeCompare(y.n,'ru'));
+  houseCache[it.full]=out;return out;
+}
 async function suggest(text){
   const c=myPos||lastC||[37.618,55.751],box='&ll='+c[0]+','+c[1]+'&spn=0.6,0.4';
   const [a,b]=await Promise.allSettled([geoQuery(text,box+'&rspn=1',8),geoQuery(text,box,6)]);
   const loc=[],oth=[],seen=new Set();
   [a,b].forEach((x,k)=>{if(x.status!=='fulfilled')return;x.value.forEach(it=>{if(seen.has(it.full))return;seen.add(it.full);it.local=k===0;it.d=distM(c,it.c);(k===0?loc:oth).push(it)})});
   if(!loc.length&&!oth.length&&a.status==='rejected'&&b.status==='rejected')throw a.reason;
+  if(!/\d/.test(text)){
+    const st=loc.find(x=>x.kind==='street');
+    if(st){try{
+      const hs=await houseList(st);
+      hs.forEach(h=>{h.it.d=distM(c,h.it.c);h.it.local=true});
+      hs.slice().sort((x,y)=>x.it.d-y.it.d).slice(0,4).forEach(h=>{if(!seen.has(h.it.full)){seen.add(h.it.full);loc.push(h.it)}});
+    }catch(e){}}
+  }
   loc.sort((x,y)=>x.d-y.d);oth.sort((x,y)=>x.d-y.d);
-  return loc.concat(oth).slice(0,10);
+  return loc.concat(oth).slice(0,12);
 }
 function distM(a,b){const R=6371000,r=Math.PI/180,dl=(b[1]-a[1])*r,dn=(b[0]-a[0])*r,x=Math.sin(dl/2)**2+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
 function fmtD(m){return m<1000?Math.max(10,Math.round(m/10)*10)+' м':(m/1000).toFixed(m<10000?1:0).replace('.',',')+' км'}
@@ -385,43 +406,66 @@ function fitSug(){
 }
 function hideSug(){$('sug').hidden=true}
 function syncX(){$('qx').hidden=!$('q').value}
+function loadHist(){try{return JSON.parse(localStorage.getItem('moodmap_hist')||'[]')}catch(e){return[]}}
+function addHist(it){
+  const h=loadHist(),k=h.find(x=>x.full===it.full);
+  if(k){k.n=(k.n||1)+1;k.t=Date.now()}else h.push({c:it.c,title:it.title,sub:it.sub,full:it.full,kind:it.kind,n:1,t:Date.now()});
+  h.sort((a,b)=>b.n-a.n||b.t-a.t);
+  try{localStorage.setItem('moodmap_hist',JSON.stringify(h.slice(0,30)))}catch(e){}
+}
+function histItems(q){
+  const base=myPos||lastC||null;let h=loadHist();
+  if(q)h=h.filter(x=>x.full.toLowerCase().includes(q.toLowerCase()));
+  return h.slice(0,q?2:6).map(x=>Object.assign({},x,{hist:true,local:true,d:base?distM(base,x.c):null}));
+}
+let streetCtx=null;
 async function pickStreet(it){
-  $('q').value=it.full+', ';syncX();
-  const b=$('sug');b.textContent='';
-  const g=document.createElement('div');g.className='gl';g.textContent='Ищу номера домов…';b.appendChild(g);b.hidden=false;
-  let houses=[];
-  try{
-    const pre=it.full+', ';
-    const arr=await geoQuery(it.full+',','&kind=house&ll='+it.c[0]+','+it.c[1]+'&spn=0.05,0.04&rspn=1',50);
-    const seen=new Set();
-    arr.forEach(h=>{if(h.kind!=='house'||!h.full.startsWith(pre)||seen.has(h.full))return;seen.add(h.full);houses.push({it:h,n:h.full.slice(pre.length)})});
-    houses.sort((x,y)=>(parseInt(x.n)||0)-(parseInt(y.n)||0)||x.n.localeCompare(y.n,'ru'));
-  }catch(e){}
+  const q=$('q');q.value=it.full+', ';syncX();lastQ=q.value;
+  streetCtx={it,houses:[],loading:true};
+  q.focus();try{q.setSelectionRange(q.value.length,q.value.length)}catch(e){}
+  renderHouses();
+  const ctx=streetCtx;
+  try{ctx.houses=await houseList(it)}catch(e){ctx.houses=[]}
+  ctx.loading=false;
+  if(streetCtx===ctx)renderHouses();
+}
+function renderHouses(){
+  const ctx=streetCtx;if(!ctx)return;
+  const b=$('sug'),t=$('q').value.trim(),rest=t.slice(ctx.it.full.length+1).trim();
   b.textContent='';
-  const t=document.createElement('div');t.className='gl';t.textContent='Номер дома · '+it.title;b.appendChild(t);
-  const grid=document.createElement('div');grid.className='hgrid';
-  const all=document.createElement('button');all.className='all';all.textContent='Вся улица';all.onclick=()=>goTo(it);grid.appendChild(all);
-  houses.forEach(h=>{const x=document.createElement('button');x.textContent=h.n;x.onclick=()=>goTo(h.it);grid.appendChild(x)});
-  b.appendChild(grid);
-  if(!houses.length){const n=document.createElement('div');n.className='gl';n.textContent='Номера не нашлись, введите вручную';b.appendChild(n)}
+  const g=document.createElement('div');g.className='gl';
+  g.textContent=ctx.loading?'Ищу номера домов…':'Номер дома · '+ctx.it.title;b.appendChild(g);
+  if(!ctx.loading){
+    const hs=rest?ctx.houses.filter(h=>h.n.toLowerCase().startsWith(rest.toLowerCase())):ctx.houses;
+    const grid=document.createElement('div');grid.className='hgrid';
+    const all=document.createElement('button');all.className='all';all.textContent='Вся улица';all.onclick=()=>goTo(ctx.it);grid.appendChild(all);
+    hs.slice(0,80).forEach(h=>{const x=document.createElement('button');x.textContent=h.n;x.onclick=()=>goTo(h.it);grid.appendChild(x)});
+    b.appendChild(grid);
+    const n=document.createElement('div');n.className='gl';
+    n.textContent=hs.length?'Или впишите номер и нажмите «Найти»':'Такого номера в списке нет — нажмите «Найти»';b.appendChild(n);
+  }
+  b.hidden=false;fitSug();
 }
 function goTo(it){
-  hideSug();$('q').blur();
+  hideSug();$('q').blur();streetCtx=null;
+  addHist(it);
   $('q').value=it.full;syncX();
   map.setLocation({center:it.c,zoom:17,duration:500});
   if(found)map.removeChild(found);
   found=new lib.YMapMarker({coordinates:it.c},dot('found'));map.addChild(found);
   startDraft(it.c,it.title,it.full);
 }
-function showSug(list){
+const CLOCK='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+function showSug(list,label){
   const b=$('sug');b.textContent='';
+  if(label){const g=document.createElement('div');g.className='gl';g.textContent=label;b.appendChild(g)}
   const hasOther=list.some(x=>!x.local);
   let sepDone=false;
   list.forEach(it=>{
     if(hasOther&&!it.local&&!sepDone){sepDone=true;const g=document.createElement('div');g.className='gl';g.textContent='В других городах';b.appendChild(g)}
     const t=document.createElement('button');t.className='it';
     const ic=document.createElement('div');ic.className='ic2'+(it.kind==='metro'?' m':'');
-    ic.innerHTML=KIND_ICON[it.kind]||KIND_ICON.place;t.appendChild(ic);
+    ic.innerHTML=(KIND_ICON[it.kind]||KIND_ICON.place)+(it.hist?'<i class="ck">'+CLOCK+'</i>':'');t.appendChild(ic);
     const tx=document.createElement('div');tx.className='tx';
     const tt=document.createElement('div');tt.className='t';hl(tt,it.title,lastQ);tx.appendChild(tt);
     const lab=(it.kind==='house'||it.kind==='street')?'':(KIND_LABEL[it.kind]||'');
@@ -432,7 +476,8 @@ function showSug(list){
     t.onclick=()=>it.kind==='street'?pickStreet(it):goTo(it);
     b.appendChild(t);
   });
-  b.hidden=!list.length;
+  b.hidden=!list.length&&!label;
+  if(!list.length)b.hidden=true;
   fitSug();
 }
 let sugTimer=null,sugSeq=0;
@@ -440,18 +485,33 @@ function onType(){
   syncX();
   const t=$('q').value.trim();lastQ=t;
   clearTimeout(sugTimer);
-  if(t.length<3){hideSug();return}
+  if(streetCtx&&t.startsWith(streetCtx.it.full+',')){renderHouses();return}
+  streetCtx=null;
+  if(!t){const h=histItems('');if(h.length)showSug(h,'Часто ищете');else hideSug();return}
+  if(t.length<3){const h=histItems(t);if(h.length)showSug(h);else hideSug();return}
   const my=++sugSeq;
   sugTimer=setTimeout(async()=>{
-    try{const list=await suggest(t);if(my===sugSeq)showSug(list)}catch(e){if(my===sugSeq)hideSug()}
+    try{
+      const list=await suggest(t);
+      if(my!==sugSeq)return;
+      const hist=histItems(t),seen=new Set(hist.map(x=>x.full));
+      showSug(hist.concat(list.filter(x=>!seen.has(x.full))));
+    }catch(e){if(my===sugSeq)hideSug()}
   },350);
 }
 async function search(){
   const t=$('q').value.trim();if(!t)return;
+  if(streetCtx&&t.startsWith(streetCtx.it.full+',')){
+    const rest=t.slice(streetCtx.it.full.length+1).trim();
+    if(!rest){goTo(streetCtx.it);return}
+    const ex=streetCtx.houses.find(h=>h.n.toLowerCase()===rest.toLowerCase());
+    if(ex){goTo(ex.it);return}
+  }
   try{
     const list=await suggest(t);
     if(!list.length)return alert('Ничего не найдено. Уточните адрес.');
-    list[0].kind==='street'?pickStreet(list[0]):goTo(list[0]);
+    const first=(/\d/.test(t)?list[0]:list.find(x=>x.kind!=='house'))||list[0];
+    first.kind==='street'?pickStreet(first):goTo(first);
   }catch(e){alert(e.message)}
 }
 function locate(){
@@ -516,7 +576,7 @@ async function init(){
 $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('q').addEventListener('input',onType);
-$('qx').onclick=()=>{$('q').value='';syncX();hideSug();sugSeq++;$('q').focus()};
+$('qx').onclick=()=>{$('q').value='';streetCtx=null;syncX();sugSeq++;$('q').focus();onType()};
 $('q').addEventListener('focus',onType);
 document.addEventListener('click',e=>{if(!$('hdr').contains(e.target))hideSug()});
 $('loc').onclick=()=>map?locate():null;
@@ -543,7 +603,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 17 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 18 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
