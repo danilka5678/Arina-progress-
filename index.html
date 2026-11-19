@@ -129,7 +129,9 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 #sug .ic2.org-other{background:#5b6ad0;color:#fff;border-radius:50%}
 #sug{transition:opacity .3s var(--ease),transform .3s var(--ease)}
 #sug.out{opacity:0;transform:translateY(-12px) scale(.98);pointer-events:none}
-body.searching #sheet{transform:translateY(calc(100% + 80px));pointer-events:none}
+body.searching #sheet{transform:translateY(var(--off,0px));pointer-events:none}
+body.searching #ymlink{opacity:0;pointer-events:none}
+#ymlink{transition:opacity .3s}
 </style>
 </head>
 <body>
@@ -430,7 +432,10 @@ function fitSug(){
   b.style.maxHeight=Math.max(180,vh-top-14)+'px';
 }
 let sheetAuto=false,sugHideT=null;
-function setSearching(v){document.body.classList.toggle('searching',v)}
+function setSearching(v){
+  if(v){const sh=$('sheet');sh.style.setProperty('--off',(sh.offsetHeight-$('grab').offsetHeight-4)+'px')}
+  document.body.classList.toggle('searching',v);
+}
 function openSug(){const b=$('sug');clearTimeout(sugHideT);b.classList.remove('out');b.hidden=false;setSearching(true)}
 function hideSug(){
   const b=$('sug');
@@ -741,19 +746,28 @@ async function init(){
   map.addChild(new YMapDefaultFeaturesLayer());
   if(pos)setMe(pos);
   styleOpenBtn();
-  map.addChild(new YMapListener({layer:'any',onUpdate:({location})=>{if(location&&location.center){lastC=location.center;lastZ=location.zoom}},onClick:(obj,ev)=>{if(obj&&obj.type==='marker')return;if(ev&&ev.coordinates)tapPlace(ev.coordinates,obj)}}));
+  map.addChild(new YMapListener({layer:'any',onUpdate:({location})=>{if(location&&location.center){lastC=location.center;lastZ=location.zoom}},onClick:(obj,ev)=>{if(obj&&obj.type==='marker')return;if(Date.now()-lastDismiss<900)return;if(ev&&ev.coordinates)tapPlace(ev.coordinates,obj)}}));
   places.forEach(addMarker);
 }
 
 $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('q').addEventListener('input',onType);
-$('q').addEventListener('focus',()=>setSearching(true));
+$('q').addEventListener('focus',()=>{
+  setSearching(true);
+  const q=$('q'),toEnd=()=>{try{q.setSelectionRange(q.value.length,q.value.length);q.scrollLeft=q.scrollWidth}catch(e){}};
+  setTimeout(toEnd,0);setTimeout(toEnd,60);setTimeout(toEnd,160);
+});
 let sugBusy=false;
 $('sug').addEventListener('touchstart',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)},{passive:true});
 $('sug').addEventListener('mousedown',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)});
 $('q').addEventListener('blur',()=>setTimeout(()=>{if(!sugBusy&&document.activeElement!==$('q'))hideSug()},250));
-document.addEventListener('touchstart',e=>{if(!$('hdr').contains(e.target)){hideSug();$('q').blur()}},{passive:true});
+let lastDismiss=0;
+document.addEventListener('touchstart',e=>{
+  if($('hdr').contains(e.target))return;
+  if(document.body.classList.contains('searching')||document.activeElement===$('q')||!$('sug').hidden)lastDismiss=Date.now();
+  hideSug();$('q').blur();
+},{passive:true});
 $('qx').onclick=()=>{$('q').value='';streetCtx=null;syncX();sugSeq++;$('q').focus();onType()};
 $('q').addEventListener('focus',onType);
 document.addEventListener('click',e=>{if(!$('hdr').contains(e.target))hideSug()});
@@ -781,7 +795,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 23 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 24 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
