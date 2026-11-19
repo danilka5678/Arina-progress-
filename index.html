@@ -214,10 +214,25 @@ function addMarker(p){
   map.addChild(mk);pins.set(p.id,{mk,el:e});paint(p);
 }
 function clearDraft(){hideInfo();if(draftMk){map.removeChild(draftMk);draftMk=null}draft=null}
+function centerOn(c,zoom,dur){
+  if(!map||!c)return;
+  const me2=$('map').getBoundingClientRect(),H=me2.height,sh=$('sheet');
+  const top=$('hdr').getBoundingClientRect().bottom+10;
+  const bottom=innerHeight-sh.offsetHeight-6;
+  const z=zoom||lastZ||15;
+  let dy=0;
+  if(bottom-top>140){
+    const want=(top+bottom)/2+26-me2.top;
+    dy=want-(H-44)/2;
+  }
+  const dpp=360/(256*Math.pow(2,z))*Math.cos(c[1]*Math.PI/180);
+  map.setLocation({center:[c[0],c[1]+dy*dpp],zoom:z,duration:dur==null?450:dur});
+}
 function select(id){setCollapsed(false);
   clearDraft();sel=id;pm=null;pt=null;reviewText='';refreshPins();
-  const p=places.find(x=>x.id===id);if(p)map.setLocation({center:p.c,duration:300});
+  const p=places.find(x=>x.id===id);
   drawSheet();
+  if(p)centerOn(p.c,null,350);
 }
 function moodButtons(){return `<div class="moods">${MOODS.map((m,i)=>`<button class="mood${pm===i+1?' on':''}" data-m="${i+1}">${m}</button>`).join('')}</div><div class="tags">${TAGS.map(t=>`<button class="chip${pt===t?' on':''}" data-t="${t}">${t}</button>`).join('')}</div><textarea id="rv" rows="2" placeholder="Отзыв о месте"></textarea>`}
 function bind(s){
@@ -308,6 +323,7 @@ async function tapPlace(c,obj){
   if(h.pt)c=h.pt;
   const hotName=h.name;
   startDraft(c,hotName,'Определяю адрес…');
+  centerOn(c,null,350);
   const [ar,or]=await Promise.allSettled([revGeocode(c),findOrg(c,hotName)]);
   if(draft!==c)return;
   const a=ar.status==='fulfilled'?ar.value:null,o=or.status==='fulfilled'?or.value:null;
@@ -315,8 +331,10 @@ async function tapPlace(c,obj){
   draftAddr=a?a.full:'Адрес не найден, будут координаты';
   draftShort=(o&&o.name)||hotName||(a&&a.short)||'';
   if(!draftName.trim()||draftName===hotName)draftName=draftShort;
+  const cFinal=c;
   draftInfo=o?{cat:o.cat,hours:o.hours,phone:o.phone,url:o.url,link:ymapsUrl(o.name,(a&&a.full)||o.addr,c)}:{link:ymapsUrl(hotName||(a&&a.short)||'',a?a.full:'',c)};
   drawSheet();
+  if(draft===c)centerOn(c,null,300);
 }
 function startDraft(c,name,addr){setCollapsed(false);
   sel=null;refreshPins();clearDraft();pm=null;pt=null;reviewText='';
@@ -553,8 +571,14 @@ async function suggestAll(t){
   return extra.concat(base.filter(x=>!seen.has(x.full)));
 }
 let streetCtx=null;
+function ctxRest(t){
+  if(!streetCtx)return null;
+  const f=streetCtx.it.full;if(!t.startsWith(f))return null;
+  const r=t.slice(f.length);if(r&&!/^[,\s]/.test(r))return null;
+  return r.replace(/^[,\s]+/,'').trim();
+}
 async function pickStreet(it){
-  const q=$('q');q.value=it.full+', ';syncX();lastQ=q.value;
+  const q=$('q');q.value=it.full+' ';syncX();lastQ=q.value;
   streetCtx={it,houses:[],loading:true};
   q.focus();try{q.setSelectionRange(q.value.length,q.value.length)}catch(e){}
   renderHouses();
@@ -565,7 +589,7 @@ async function pickStreet(it){
 }
 function renderHouses(){
   const ctx=streetCtx;if(!ctx)return;
-  const b=$('sug'),t=$('q').value.trim(),rest=t.slice(ctx.it.full.length+1).trim();
+  const b=$('sug'),t=$('q').value.trim(),rest=ctxRest(t)||'';
   b.textContent='';
   const g=document.createElement('div');g.className='gl';
   g.textContent=ctx.loading?'Ищу номера домов…':'Номер дома · '+ctx.it.title;b.appendChild(g);
@@ -584,10 +608,10 @@ function goTo(it){
   hideSug();$('q').blur();streetCtx=null;
   addHist(it);
   $('q').value=it.full;syncX();
-  map.setLocation({center:it.c,zoom:17,duration:500});
   if(found)map.removeChild(found);
   found=new lib.YMapMarker({coordinates:it.c},dot('found'));map.addChild(found);
   startDraft(it.c,it.title,it.kind==='org'?(it.addr||'Определяю адрес…'):it.full);
+  centerOn(it.c,17,500);
   if(it.kind==='org'&&!it.addr){const c0=it.c;revGeocode(c0).then(r=>{if(draft===c0&&r){draftAddr=r.full;drawSheet()}}).catch(()=>{})}
 }
 const CLOCK='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
@@ -620,7 +644,7 @@ function onType(){
   syncX();
   const t=$('q').value.trim();lastQ=t;
   clearTimeout(sugTimer);
-  if(streetCtx&&t.startsWith(streetCtx.it.full+',')){renderHouses();return}
+  if(streetCtx&&ctxRest(t)!==null){renderHouses();return}
   streetCtx=null;
   if(!t){const h=histItems('');if(h.length)showSug(h,'Часто ищете');else hideSug();return}
   const my=++sugSeq;
@@ -643,8 +667,8 @@ function onType(){
 }
 async function search(){
   const t=$('q').value.trim();if(!t)return;
-  if(streetCtx&&t.startsWith(streetCtx.it.full+',')){
-    const rest=t.slice(streetCtx.it.full.length+1).trim();
+  if(streetCtx&&ctxRest(t)!==null){
+    const rest=ctxRest(t);
     if(!rest){goTo(streetCtx.it);return}
     const ex=streetCtx.houses.find(h=>h.n.toLowerCase()===rest.toLowerCase());
     if(ex){goTo(ex.it);return}
@@ -756,7 +780,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 21 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 22 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
