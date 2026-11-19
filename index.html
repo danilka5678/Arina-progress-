@@ -132,6 +132,18 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 body.searching #sheet{transform:translateY(var(--off,0px));pointer-events:none}
 body.searching #ymlink{opacity:0;pointer-events:none}
 #ymlink{transition:opacity .3s}
+#lb{position:fixed;inset:0;z-index:50;background:rgba(3,8,18,.94);display:flex;align-items:center;justify-content:center;animation:rise .3s var(--ease)}
+#lb[hidden]{display:none}
+#lb img{max-width:100%;max-height:80%;border-radius:18px}
+#lb .lbx{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:44px;height:44px;padding:0;border-radius:50%;font-size:26px;background:var(--gloss);color:var(--tx)}
+#lb .lbd{position:absolute;bottom:calc(26px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--gloss);color:var(--danger)}
+.pstrip{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;margin:2px -4px 12px;padding:2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pstrip::-webkit-scrollbar{display:none}
+.pstrip .ph{flex:0 0 auto;width:128px;height:128px;border-radius:18px;object-fit:cover;scroll-snap-align:start;background:var(--gloss);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.pstrip img.ph:first-child{width:210px}
+.pstrip button.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0;border:1.5px dashed var(--bd);color:var(--acc);font-size:15px;box-shadow:none}
+.stars{position:relative;display:inline-block;color:rgba(255,255,255,.25);letter-spacing:2px;font-size:18px;line-height:1;vertical-align:middle}
+.stars .st{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#ffc83d}
 </style>
 </head>
 <body>
@@ -148,6 +160,8 @@ body.searching #ymlink{opacity:0;pointer-events:none}
 </div>
 <div id="sheet"><div id="sheen"></div><a id="ymlink" role="button" aria-label="Открыть в Яндекс Картах"><svg class="ic" viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.2l6.6 3.2 3.2 6.6z"/></svg></a><div id="grab" role="button" aria-label="Свернуть или развернуть"><i></i></div><div id="sheetbody"><div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div></div></div>
 
+<input id="pf" type="file" accept="image/*" multiple hidden>
+<div id="lb" hidden></div>
 <script>
 const MAP_KEY = '585f43bd-1508-4be9-ab2f-0736c802dda6'; // JavaScript API
 const GEO_KEY = '34c7b8b8-2ce4-49da-985b-1102ac7a5104'; // HTTP Геокодер
@@ -256,22 +270,28 @@ function drawSheet(){
 function drawSheetRaw(){
   const s=$('sheetbody');
   if(draft){
-    s.innerHTML=`<h2>Новое место</h2><div class="mut" id="ad" style="margin-bottom:8px"></div><div id="inf" class="infbox" hidden></div><input id="nm" placeholder="Название"><div class="mut" style="margin-top:6px">Какая тут атмосфера?</div>${moodButtons()}<button class="btn" id="save" ${pm?'':'disabled'}>Сохранить место</button><button class="ghost del" id="cancel" style="color:var(--tx)">Отмена</button>`;
-    $('nm').value=draftName;$('ad').textContent='📍 '+draftAddr;renderDraftInfo();
+    s.innerHTML=`<h2>Новое место</h2><div class="mut" id="ad" style="margin-bottom:8px"></div><div id="inf" class="infbox" hidden></div><div id="pst"></div><input id="nm" placeholder="Название"><div class="mut" style="margin-top:6px">Какая тут атмосфера?</div>${moodButtons()}<button class="btn" id="save" ${pm?'':'disabled'}>Сохранить место</button><button class="ghost del" id="cancel" style="color:var(--tx)">Отмена</button>`;
+    $('nm').value=draftName;$('ad').textContent='📍 '+draftAddr;renderDraftInfo();fillPhotos();
     bind(s);
     $('cancel').onclick=()=>{clearDraft();draftName='';drawSheet()};
-    $('save').onclick=()=>{
+    $('save').onclick=async()=>{
+      $('save').disabled=true;
       const name=$('nm').value.trim()||draftShort||draft[1].toFixed(5)+', '+draft[0].toFixed(5);
-      const p={id:String(Date.now()),c:draft,name,addr:/^(Определяю|Адрес не|Не удалось)/.test(draftAddr)?'':draftAddr,v:[pm],s:8,r:reviewText.trim()?[{m:pm,t:pt||'',x:reviewText.trim(),d:Date.now()}]:[],t:pt?{[pt]:1}:{}};
-      places.push(p);store.save(places);clearDraft();draftName='';addMarker(p);select(p.id);
+      const p={id:String(Date.now()),c:draft,name,addr:/^(Определяю|Адрес не|Не удалось)/.test(draftAddr)?'':draftAddr,v:[pm],s:8,r:reviewText.trim()?[{m:pm,t:pt||'',x:reviewText.trim(),d:Date.now()}]:[],t:pt?{[pt]:1}:{},info:(draftInfo&&!draftInfo.busy&&(draftInfo.cat||draftInfo.hours||draftInfo.phone||draftInfo.url))?{cat:draftInfo.cat||'',hours:draftInfo.hours||'',phone:draftInfo.phone||'',url:draftInfo.url||''}:null};
+      const ph=draftPhotos.slice();
+      try{await Promise.all(ph.map(u=>addPhoto(p.id,u)))}catch(e){}
+      places.push(p);store.save(places);clearDraft();draftName='';draftPhotos=[];addMarker(p);select(p.id);
     };
     return;
   }
   const p=places.find(x=>x.id===sel);
   if(!p){s.innerHTML='<div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div>';return}
   const a=avg(p),tags=Object.entries(p.t).sort((x,y)=>y[1]-x[1]).slice(0,3).map(x=>x[0]).join(', ');
-  s.innerHTML=`<h2></h2><div class="mut" id="ad2"></div><div class="mut">${a==null?'Пока нет отметок':`Сейчас ${face(a)} ${a.toFixed(1)} из ${MOODS.length} · отметок: ${p.v.length}`}</div><div class="bar"><i style="width:${a?a/MOODS.length*100:0}%;background:${col(a)}"></i></div><div class="mut">Теги: ${tags||'пока нет'}</div><div id="ymrow" class="rowlink" style="margin-top:6px"></div><div id="revs"></div>${moodButtons()}<button class="btn" id="go2" ${pm?'':'disabled'}>Отметить настроение</button><button class="ghost del" id="rm">Удалить место</button>`;
+  s.innerHTML=`<h2></h2><div class="mut" id="ad2"></div><div id="stars" style="margin:6px 0"></div><div id="inf2" class="infbox" hidden></div><div id="pst"></div><div class="mut">${a==null?'Пока нет отметок':`Сейчас ${face(a)} ${a.toFixed(1)} из ${MOODS.length} · отметок: ${p.v.length}`}</div><div class="bar"><i style="width:${a?a/MOODS.length*100:0}%;background:${col(a)}"></i></div><div class="mut">Теги: ${tags||'пока нет'}</div><div id="ymrow" class="rowlink" style="margin-top:6px"></div><div id="revs"></div>${moodButtons()}<button class="btn" id="go2" ${pm?'':'disabled'}>Отметить настроение</button><button class="ghost del" id="rm">Удалить место</button>`;
   s.querySelector('h2').textContent=p.name;$('ad2').textContent=p.addr?'📍 '+p.addr:'';
+  if(a!=null){const sr=starsHtml(a);$('stars').innerHTML=sr.html+' <b>'+sr.r.toFixed(1).replace('.',',')+'</b> <span class="mut">· '+plr(p.v.length,'оценка','оценки','оценок')+'</span>'}
+  renderInfoInto($('inf2'),p.info);
+  fillPhotos();
   const ya=document.createElement('a');ya.href=ymapsUrl(p.name,p.addr||'',p.c);ya.target='_blank';ya.rel='noopener';ya.textContent='🗺 Рейтинг и отзывы в Яндекс Картах';ya.style.color='var(--acc)';$('ymrow').appendChild(ya);
   (p.r||[]).slice(-5).reverse().forEach(r=>{const d=document.createElement('div');d.className='rev';d.textContent=(MOODS[r.m-1]||'')+' '+r.x+' · '+new Date(r.d).toLocaleDateString('ru-RU');$('revs').appendChild(d)});
   bind(s);
@@ -281,10 +301,42 @@ function drawSheetRaw(){
 
 function ymapsUrl(name,addr,c){return 'https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z=17&text='+encodeURIComponent((name||'')+(addr?', '+addr:''))}
 function hideInfo(){}
-let draftInfo=null,myPos=null,lastQ='';
-function renderDraftInfo(){
-  const b=$('inf');if(!b)return;
-  b.textContent='';const d=draftInfo;
+let _db=null;
+function idb(){return _db||(_db=new Promise((res,rej)=>{try{const r=indexedDB.open('moodmap',1);r.onupgradeneeded=()=>{const st=r.result.createObjectStore('photos',{keyPath:'id',autoIncrement:true});st.createIndex('pid','pid')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))}
+async function photosOf(pid){const db=await idb();return new Promise((res,rej)=>{const q=db.transaction('photos').objectStore('photos').index('pid').getAll(pid);q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error)})}
+async function addPhoto(pid,url){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('photos','readwrite');t.objectStore('photos').add({pid,url,t:Date.now()});t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function delPhoto(id){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('photos','readwrite');t.objectStore('photos').delete(id);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+function shrink(file){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const k=Math.min(1,1000/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.72))};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('img'))};img.src=u})}
+const CAM='<svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+function openLB(items,i){
+  const lb=$('lb');lb.textContent='';lb.hidden=false;
+  const im=document.createElement('img');im.src=items[i].url;lb.appendChild(im);
+  const x=document.createElement('button');x.className='lbx';x.textContent='×';x.onclick=()=>{lb.hidden=true};lb.appendChild(x);
+  const d=document.createElement('button');d.className='lbd';d.textContent='Удалить фото';
+  d.onclick=async()=>{if(draft)draftPhotos.splice(items[i].i,1);else if(items[i].id!=null){try{await delPhoto(items[i].id)}catch(e){}}lb.hidden=true;fillPhotos()};
+  lb.appendChild(d);
+  lb.onclick=e=>{if(e.target===lb||e.target===im)lb.hidden=true};
+}
+async function fillPhotos(){
+  if(!$('pst'))return;
+  let items=[];
+  if(draft)items=draftPhotos.map((u,i)=>({url:u,i}));
+  else if(sel){try{items=(await photosOf(sel)).map(r=>({id:r.id,url:r.url}))}catch(e){items=[]}}
+  else return;
+  const b=$('pst');if(!b)return;
+  b.textContent='';
+  const w=document.createElement('div');w.className='pstrip';
+  items.forEach((it,i)=>{const im=document.createElement('img');im.className='ph';im.src=it.url;im.onclick=()=>openLB(items,i);w.appendChild(im)});
+  const add=document.createElement('button');add.className='ph';add.innerHTML=CAM+'<span>Фото</span>';add.onclick=()=>$('pf').click();
+  w.appendChild(add);b.appendChild(w);
+}
+function plr(n,a,b,c){const m=n%10,h=n%100;return n+' '+(m===1&&h!==11?a:(m>=2&&m<=4&&(h<10||h>=20)?b:c))}
+function starsHtml(avgMood){const r=1+(avgMood-1)*4/(MOODS.length-1);return{r,html:'<span class="stars"><span class="st" style="width:'+(r/5*100).toFixed(0)+'%">★★★★★</span>★★★★★</span>'}}
+let draftInfo=null,myPos=null,lastQ='',draftPhotos=[];
+function renderDraftInfo(){renderInfoInto($('inf'),draftInfo)}
+function renderInfoInto(b,d){
+  if(!b)return;
+  b.textContent='';
   if(!d){b.hidden=true;return}
   const add=t=>{const r=document.createElement('div');r.className='row';r.textContent=t;b.appendChild(r);return r};
   if(d.cat)add(d.cat);
@@ -339,7 +391,7 @@ async function tapPlace(c,obj){
   drawSheet();
   if(draft===c)centerOn(c,null,300);
 }
-function startDraft(c,name,addr){setCollapsed(false);
+function startDraft(c,name,addr){setCollapsed(false);draftPhotos=[];
   sel=null;refreshPins();clearDraft();pm=null;pt=null;reviewText='';
   draft=c;draftName=name||'';draftShort=name||'';draftAddr=addr||'Определяю адрес…';
   draftMk=new lib.YMapMarker({coordinates:c},pin('draft'));map.addChild(draftMk);
@@ -762,6 +814,13 @@ let sugBusy=false;
 $('sug').addEventListener('touchstart',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)},{passive:true});
 $('sug').addEventListener('mousedown',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)});
 $('q').addEventListener('blur',()=>setTimeout(()=>{if(!sugBusy&&document.activeElement!==$('q'))hideSug()},250));
+$('pf').addEventListener('change',async e=>{
+  const files=[...e.target.files];e.target.value='';
+  for(const f of files.slice(0,8)){
+    try{const u=await shrink(f);if(draft)draftPhotos.push(u);else if(sel)await addPhoto(sel,u)}catch(err){}
+  }
+  fillPhotos();
+});
 let lastDismiss=0;
 document.addEventListener('touchstart',e=>{
   if($('hdr').contains(e.target))return;
@@ -795,7 +854,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 24 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 25 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
