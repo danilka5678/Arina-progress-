@@ -127,6 +127,8 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 #sug .ic2.org-health{background:#c0505a;color:#fff;border-radius:50%}
 #sug .ic2.org-shop{background:#1f6fe0;color:#fff;border-radius:50%}
 #sug .ic2.org-other{background:#5b6ad0;color:#fff;border-radius:50%}
+#sug{transition:opacity .3s var(--ease),transform .3s var(--ease)}
+#sug.out{opacity:0;transform:translateY(-12px) scale(.98);pointer-events:none}
 </style>
 </head>
 <body>
@@ -408,7 +410,16 @@ function fitSug(){
   const vh=window.visualViewport?visualViewport.height:innerHeight,top=b.getBoundingClientRect().top;
   b.style.maxHeight=Math.max(180,vh-top-14)+'px';
 }
-function hideSug(){$('sug').hidden=true}
+let sheetAuto=false,sugHideT=null;
+function openSug(){const b=$('sug');clearTimeout(sugHideT);b.classList.remove('out');b.hidden=false}
+function hideSug(){
+  const b=$('sug');
+  if(sheetAuto){sheetAuto=false;setCollapsed(false)}
+  if(b.hidden||b.classList.contains('out'))return;
+  b.classList.add('out');
+  clearTimeout(sugHideT);
+  sugHideT=setTimeout(()=>{b.hidden=true;b.classList.remove('out')},300);
+}
 function syncX(){$('qx').hidden=!$('q').value}
 function loadHist(){try{return JSON.parse(localStorage.getItem('moodmap_hist')||'[]')}catch(e){return[]}}
 function addHist(it){
@@ -567,7 +578,7 @@ function renderHouses(){
     const n=document.createElement('div');n.className='gl';
     n.textContent=hs.length?'Или впишите номер и нажмите «Найти»':'Такого номера в списке нет — нажмите «Найти»';b.appendChild(n);
   }
-  b.hidden=false;fitSug();
+  openSug();fitSug();
 }
 function goTo(it){
   hideSug();$('q').blur();streetCtx=null;
@@ -601,8 +612,8 @@ function showSug(list,label,foot){
     b.appendChild(t);
   });
   if(foot){const g=document.createElement('div');g.className='gl';g.style.textTransform='none';g.style.letterSpacing='0';g.style.fontFamily='inherit';g.textContent=foot;b.appendChild(g)}
-  b.hidden=!list.length&&!label&&!foot;
-  fitSug();
+  if(!list.length&&!label&&!foot){hideSug();return}
+  openSug();fitSug();
 }
 let sugTimer=null,sugSeq=0;
 function onType(){
@@ -712,6 +723,7 @@ async function init(){
 $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('q').addEventListener('input',onType);
+$('q').addEventListener('focus',()=>{if(!$('sheet').classList.contains('collapsed')){setCollapsed(true);sheetAuto=true}});
 let sugBusy=false;
 $('sug').addEventListener('touchstart',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)},{passive:true});
 $('sug').addEventListener('mousedown',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)});
@@ -722,7 +734,7 @@ $('q').addEventListener('focus',onType);
 document.addEventListener('click',e=>{if(!$('hdr').contains(e.target))hideSug()});
 $('loc').onclick=()=>map?locate():null;
 function setCollapsed(v){
-  const sh=$('sheet');
+  const sh=$('sheet');if(!v)sheetAuto=false;
   if(v)sh.style.setProperty('--off',(sh.offsetHeight-$('grab').offsetHeight-4)+'px');
   sh.classList.toggle('collapsed',v);
 }
@@ -744,7 +756,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 20 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 21 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
