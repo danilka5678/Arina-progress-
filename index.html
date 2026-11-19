@@ -129,6 +129,7 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 #sug .ic2.org-other{background:#5b6ad0;color:#fff;border-radius:50%}
 #sug{transition:opacity .3s var(--ease),transform .3s var(--ease)}
 #sug.out{opacity:0;transform:translateY(-12px) scale(.98);pointer-events:none}
+body.searching #sheet{transform:translateY(calc(100% + 80px));pointer-events:none}
 </style>
 </head>
 <body>
@@ -247,7 +248,7 @@ function drawSheet(){
   const sh=$('sheet'),h0=sh.offsetHeight;
   drawSheetRaw();
   const h1=sh.offsetHeight;
-  if(!sh.classList.contains('collapsed')&&h0&&Math.abs(h1-h0)>3&&sh.animate)
+  if(!sh.classList.contains('collapsed')&&!document.body.classList.contains('searching')&&h0&&Math.abs(h1-h0)>3&&sh.animate)
     sh.animate([{transform:'translateY('+(h1-h0)+'px)'},{transform:'translateY(0)'}],{duration:480,easing:'cubic-bezier(.22,1,.36,1)'});
 }
 function drawSheetRaw(){
@@ -429,14 +430,14 @@ function fitSug(){
   b.style.maxHeight=Math.max(180,vh-top-14)+'px';
 }
 let sheetAuto=false,sugHideT=null;
-function openSug(){const b=$('sug');clearTimeout(sugHideT);b.classList.remove('out');b.hidden=false}
+function setSearching(v){document.body.classList.toggle('searching',v)}
+function openSug(){const b=$('sug');clearTimeout(sugHideT);b.classList.remove('out');b.hidden=false;setSearching(true)}
 function hideSug(){
   const b=$('sug');
-  if(sheetAuto){sheetAuto=false;setCollapsed(false)}
-  if(b.hidden||b.classList.contains('out'))return;
+  if(b.hidden||b.classList.contains('out')){if(document.activeElement!==$('q'))setSearching(false);return}
   b.classList.add('out');
   clearTimeout(sugHideT);
-  sugHideT=setTimeout(()=>{b.hidden=true;b.classList.remove('out')},300);
+  sugHideT=setTimeout(()=>{b.hidden=true;b.classList.remove('out');if(document.activeElement!==$('q'))setSearching(false)},300);
 }
 function syncX(){$('qx').hidden=!$('q').value}
 function loadHist(){try{return JSON.parse(localStorage.getItem('moodmap_hist')||'[]')}catch(e){return[]}}
@@ -747,7 +748,7 @@ async function init(){
 $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 $('q').addEventListener('input',onType);
-$('q').addEventListener('focus',()=>{if(!$('sheet').classList.contains('collapsed')){setCollapsed(true);sheetAuto=true}});
+$('q').addEventListener('focus',()=>setSearching(true));
 let sugBusy=false;
 $('sug').addEventListener('touchstart',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)},{passive:true});
 $('sug').addEventListener('mousedown',()=>{sugBusy=true;setTimeout(()=>{sugBusy=false},700)});
@@ -780,7 +781,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 22 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 23 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
