@@ -101,7 +101,7 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 
 .pb{position:absolute;left:0;top:0;width:0;height:0;cursor:pointer}
 .pb::after{content:"";position:absolute;left:-24px;top:-56px;width:48px;height:60px}
-.pb .ps{position:absolute;left:-16px;top:-52px;overflow:visible;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
+.pb .ps{position:absolute;left:-16px;top:-52px;overflow:visible}
 .pb .f{position:absolute;left:9px;top:-52px;width:20px;height:20px;border-radius:50%;background:rgba(3,8,18,.92);border:1.5px solid #fff;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
 .pb .ring{position:absolute;left:-11px;top:-5px;width:22px;height:10px;border-radius:50%;border:1.5px solid var(--acc);box-shadow:0 0 6px var(--acc);opacity:0;pointer-events:none}
 .pb.sel .ring,.pb.draft .ring{animation:ground 1.8s ease-out infinite}
@@ -144,6 +144,38 @@ body.searching #ymlink{opacity:0;pointer-events:none}
 .pstrip button.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0;border:1.5px dashed var(--bd);color:var(--acc);font-size:15px;box-shadow:none}
 .stars{position:relative;display:inline-block;color:rgba(255,255,255,.25);letter-spacing:2px;font-size:18px;line-height:1;vertical-align:middle}
 .stars .st{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#ffc83d}
+body.moving header,body.moving #sheet,body.moving #sug{-webkit-backdrop-filter:none;backdrop-filter:none}
+body.moving header{background:linear-gradient(120deg,rgba(2,7,100,.9),rgba(3,8,18,.86))}
+body.moving #sheet{background:linear-gradient(180deg,rgba(4,55,128,.84) 0%,rgba(2,7,100,.82) 40%,rgba(3,8,18,.93) 100%)}
+body.moving header::after,body.moving #sheen::before,body.moving .pb .ring,body.moving .dot.me::after{animation-play-state:paused}
+.chip.ico{width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.chip.ico.on{background:var(--cta);color:#030812}
+.pb .hrt{display:none;position:absolute;left:-26px;top:-50px;width:18px;height:18px;border-radius:50%;background:rgba(3,8,18,.92);border:1.5px solid #fff;color:#ff4d6d;font-size:11px;line-height:15px;text-align:center}
+.pb.fav .hrt{display:block}
+.trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.trow h2{margin:0}
+button.heart{flex:0 0 auto;width:44px;height:44px;padding:0;border-radius:50%;background:var(--gloss);color:var(--tx);display:flex;align-items:center;justify-content:center}
+#sug .ic2.org-fav{background:#d6406a;color:#fff;border-radius:50%}
+@keyframes blip{0%{transform:scale(1)}40%{transform:scale(1.4)}100%{transform:scale(1)}}
+.pb .ps{transform-origin:50% 100%}
+.pb.blip .ps{animation:blip .6s ease-out}
+#demo{position:fixed;left:12px;right:12px;z-index:4;padding:10px 12px 8px;border-radius:20px;background:linear-gradient(120deg,rgba(2,7,100,.8),rgba(3,8,18,.8));border:1px solid var(--bd);box-shadow:0 0 22px rgba(2,94,196,.4)}
+#demo[hidden]{display:none}
+#demo .dh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+#demo .live{color:#ff4d6d;font-family:var(--cond);letter-spacing:.1em;font-size:14px;animation:halo2 1.4s ease-in-out infinite}
+@keyframes halo2{50%{opacity:.35}}
+#demo .ttl{font-family:var(--cond);font-size:18px;letter-spacing:.08em;flex:1;cursor:pointer}
+#demo button{padding:5px 11px;font-size:14px;border-radius:12px}
+#demo .dn{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+#demo .dn b{display:block;font-family:var(--cond);font-size:22px;line-height:1.1}
+#demo .dn i{font-style:normal;font-size:11px;color:var(--mut)}
+#demo .db{display:flex;gap:4px;align-items:flex-end;height:52px;margin:8px 0 2px}
+#demo .bc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%}
+#demo .bb{width:100%;border-radius:4px 4px 2px 2px;min-height:2px;transition:height .4s var(--ease)}
+#demo .bc span{font-size:11px;line-height:1}
+#demo #dm-feed{font-size:12px;color:var(--mut);min-height:34px}
+#demo #dm-feed div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#demo.min .dn,#demo.min .db,#demo.min #dm-feed,#demo.min #dm-top{display:none}
 </style>
 </head>
 <body>
@@ -158,6 +190,7 @@ body.searching #ymlink{opacity:0;pointer-events:none}
     <div class="chips" id="chips"></div>
   </div>
 </div>
+<div id="demo" hidden></div>
 <div id="sheet"><div id="sheen"></div><a id="ymlink" role="button" aria-label="Открыть в Яндекс Картах"><svg class="ic" viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.2l6.6 3.2 3.2 6.6z"/></svg></a><div id="grab" role="button" aria-label="Свернуть или развернуть"><i></i></div><div id="sheetbody"><div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div></div></div>
 
 <input id="pf" type="file" accept="image/*" multiple hidden>
@@ -171,7 +204,7 @@ const TAGS=["тихо","уютно","шумно","весело","суета","р
 const $=id=>document.getElementById(id);
 const store={
   load(){try{return JSON.parse(localStorage.getItem('moodmap_places')||'[]')}catch(e){return[]}},
-  save(v){try{localStorage.setItem('moodmap_places',JSON.stringify(v))}catch(e){}}
+  save(v){try{localStorage.setItem('moodmap_places',JSON.stringify(v.filter(x=>!x.demo)))}catch(e){}}
 };
 let places=store.load(),map,lib,pins=new Map(),sel=null,draft=null,draftMk=null,pm=null,pt=null,filt=null,moodFilter=null,me,found,reviewText='';
 places.forEach(p=>{if(!p.s){p.v=p.v.map(x=>Math.round((x-1)/4*7+1));p.s=8}if(!p.r)p.r=[]});store.save(places);
@@ -182,8 +215,8 @@ const face=a=>a==null?'•':MOODS[Math.round(a)-1];
 function bestFor(tag){let b=null,m=0;places.forEach(p=>{const n=p.t[tag]||0;if(n>m){m=n;b=p.id}});return b}
 function say(t){const m=$('msg');m.textContent=t;m.style.display='flex'}
 let pinN=0;
-function pinSvg(id){return '<svg class="ps" viewBox="0 0 32 52" width="32" height="52"><defs><radialGradient id="'+id+'" cx=".34" cy=".3" r=".85"><stop offset="0" stop-color="#ff8f8f"/><stop offset=".55" stop-color="#e23b3b"/><stop offset="1" stop-color="#8f1218"/></radialGradient><linearGradient id="ndl" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#f6f8fb"/><stop offset=".5" stop-color="#a3abbb"/><stop offset="1" stop-color="#6b7284"/></linearGradient></defs><polygon points="13.3,27 18.7,27 16,52" fill="url(#ndl)" stroke="#7b8394" stroke-width=".5" stroke-linejoin="miter"/><ellipse cx="16" cy="28" rx="7.2" ry="2.6" fill="#59606f"/><circle cx="16" cy="16" r="13.5" fill="url(#'+id+')"/><ellipse cx="10.6" cy="9.6" rx="5" ry="3.2" transform="rotate(-35 10.6 9.6)" fill="#fff" opacity=".7"/><circle cx="8.8" cy="8.2" r="1.4" fill="#fff"/></svg>'}
-function pin(cls){const o=document.createElement('div');o.className='mpin';const b=document.createElement('div');b.className='pb '+(cls||'');b.innerHTML='<span class="ring"></span><span class="ring b"></span>'+pinSvg('pg'+(++pinN));const f=document.createElement('span');f.className='f';b.appendChild(f);o.appendChild(b);o.pb=b;o.f=f;o.stops=[...b.querySelectorAll('radialGradient stop')];return o}
+function pinSvg(id){return '<svg class="ps" viewBox="0 0 32 52" width="32" height="52"><ellipse cx="16" cy="50.8" rx="7" ry="2" fill="rgba(0,0,0,.38)"/><defs><radialGradient id="'+id+'" cx=".34" cy=".3" r=".85"><stop offset="0" stop-color="#ff8f8f"/><stop offset=".55" stop-color="#e23b3b"/><stop offset="1" stop-color="#8f1218"/></radialGradient><linearGradient id="ndl" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#f6f8fb"/><stop offset=".5" stop-color="#a3abbb"/><stop offset="1" stop-color="#6b7284"/></linearGradient></defs><polygon points="13.3,27 18.7,27 16,52" fill="url(#ndl)" stroke="#7b8394" stroke-width=".5" stroke-linejoin="miter"/><ellipse cx="16" cy="28" rx="7.2" ry="2.6" fill="#59606f"/><circle cx="16" cy="16" r="13.5" fill="url(#'+id+')"/><ellipse cx="10.6" cy="9.6" rx="5" ry="3.2" transform="rotate(-35 10.6 9.6)" fill="#fff" opacity=".7"/><circle cx="8.8" cy="8.2" r="1.4" fill="#fff"/></svg>'}
+function pin(cls){const o=document.createElement('div');o.className='mpin';const b=document.createElement('div');b.className='pb '+(cls||'');b.innerHTML='<span class="ring"></span><span class="ring b"></span><span class="hrt">♥</span>'+pinSvg('pg'+(++pinN));const f=document.createElement('span');f.className='f';b.appendChild(f);o.appendChild(b);o.pb=b;o.f=f;o.stops=[...b.querySelectorAll('radialGradient stop')];return o}
 function setPinHue(o,h){
   const c=h==null?['#d4d9e2','#8f98a8','#4c5362']:['hsl('+h+',92%,70%)','hsl('+h+',80%,50%)','hsl('+h+',86%,27%)'];
   o.stops.forEach((st,k)=>st.setAttribute('stop-color',c[k]));
@@ -200,7 +233,15 @@ function drawChips(){
     all.appendChild(document.createTextNode('Все'));
     const ch=document.createElement('span');ch.className='chev';all.appendChild(ch);
     all.onclick=()=>{chipsOpen=!chipsOpen;if(chipsOpen&&c.scrollLeft>0)c.scrollTo({left:0,behavior:'smooth'});drawChips()};
-    c.appendChild(all);
+    const HEART='<svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>';
+    const FLAME='<svg class="ic" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></svg>';
+    const fv=document.createElement('button');fv.className='chip ico';fv.innerHTML=HEART;fv.setAttribute('aria-label','Избранное');fv.onclick=showFavs;
+    const hv=document.createElement('button');hv.className='chip ico';hv.innerHTML=FLAME;hv.setAttribute('aria-label','Карта настроения города');
+    hv.onclick=()=>{heatOn=!heatOn;hv.classList.toggle('on',heatOn);drawHeat()};
+    const dv=document.createElement('button');dv.className='chip ico';dv.id='demoChip';dv.setAttribute('aria-label','Демо');
+    dv.innerHTML='<svg class="ic" viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-7M22 20V8"/></svg>';
+    dv.onclick=()=>demoOn?stopDemo():startDemo();
+    c.appendChild(fv);c.appendChild(hv);c.appendChild(dv);c.appendChild(all);
     chipEls={all,ch,opts:OPTS.map(([e,t,l])=>{
       const b=document.createElement('button');b.className='chip opt emo hide';b.textContent=e;b.title=l;b.setAttribute('aria-label',l);
       b.onclick=()=>{moodFilter=moodFilter===t?null:t;drawChips();refreshPins()};
@@ -215,6 +256,109 @@ function drawChips(){
     b.style.setProperty('--i',chipsOpen?i:0);
   });
 }
+const DN_A=['Кофейня','Бар','Парк','Кафе','Ресторан','Пекарня','Библиотека','Сквер','Набережная','Бистро','Лофт','Чайная','Паб','Терраса','Книжный клуб'];
+const DN_B=['Луч','Берёзка','Неон','Причал','Мята','Рассвет','Ангар','Тихий двор','Кедр','Вечер','Орбита','Янтарь','Маяк','Остров','Лагуна','Облако','Вишня','Хмель','Радуга','Север'];
+const DN_R=['Очень уютно','Шумновато, но весело','Сидели допоздна','Тихо и спокойно','Вернусь ещё','Быстро обслужили','Было людно','Красивый вид'];
+let demoOn=false,demoTimer=null,demoSpeed=5,demoList=[],demoStamps=[],demoFeed=[],heatT=null,demoSheetT=0;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const gz=()=>(Math.random()+Math.random()+Math.random()-1.5)*1.6;
+const clMood=x=>Math.max(1,Math.min(MOODS.length,Math.round(x)));
+function startDemo(){
+  if(demoOn||!map)return;demoOn=true;
+  $('demoChip').classList.add('on');
+  const c0=myPos||lastC||[37.618,55.751],used=new Set();
+  for(let i=0;i<80;i++){
+    let nm,g=0;do{nm=pick(DN_A)+' «'+pick(DN_B)+'»'}while(used.has(nm)&&++g<30);used.add(nm);
+    const r=Math.sqrt(Math.random())*3500,an=Math.random()*6.283;
+    const c=[c0[0]+r*Math.cos(an)/(111320*Math.cos(c0[1]*Math.PI/180)),c0[1]+r*Math.sin(an)/111320];
+    const b=1.8+Math.random()*5.6,n=4+Math.floor(Math.random()*11),v=[];
+    for(let k=0;k<n;k++)v.push(clMood(b+gz()));
+    const t={};TAGS.forEach(tg=>{if(Math.random()<.4)t[tg]=1+Math.floor(Math.random()*5)});
+    const rv=Math.random()<.35?[{m:v[0],t:'',x:pick(DN_R),d:Date.now()-Math.random()*8e8}]:[];
+    const p={id:'d'+i,c,name:nm,addr:'Демо-данные',v,s:8,r:rv,t,info:null,demo:true,_b:b};
+    places.push(p);demoList.push(p);addMarker(p);
+  }
+  map.setLocation({center:c0,zoom:13,duration:700});
+  buildHud();$('demo').hidden=false;placeHud();
+  demoStamps=[];demoFeed=[];
+  demoTimer=setInterval(demoTick,500);
+  hud();
+}
+function stopDemo(){
+  demoOn=false;clearInterval(demoTimer);
+  $('demoChip').classList.remove('on');
+  demoList.forEach(p=>{const o=pins.get(p.id);if(o){try{map.removeChild(o.mk)}catch(e){}pins.delete(p.id)}});
+  places=places.filter(p=>!p.demo);demoList=[];
+  if(sel&&!places.find(p=>p.id===sel)){sel=null;drawSheet()}
+  $('demo').hidden=true;
+  if(heatOn)drawHeat();
+}
+function placeHud(){$('demo').style.top=($('top').getBoundingClientRect().bottom+4)+'px'}
+function buildHud(){
+  const b=$('demo');
+  b.innerHTML='<div class="dh"><span class="live">● LIVE</span><span class="ttl" id="dm-t">ДЕМО-ТРАФИК ▾</span><span id="dm-sp"></span><button class="ghost" id="dm-x" aria-label="Выключить">×</button></div><div class="dn"><div><b id="dm-p">0</b><i>мест</i></div><div><b id="dm-v">0</b><i>оценок</i></div><div><b id="dm-a">0</b><i>средняя</i></div><div><b id="dm-r">0</b><i>в минуту</i></div></div><div class="db" id="dm-bars"></div><div class="mut" id="dm-top"></div><div id="dm-feed"></div>';
+  const sp=$('dm-sp');
+  [[1,'1×'],[5,'5×'],[20,'20×']].forEach(([v,l])=>{const x=document.createElement('button');x.textContent=l;x.className=v===demoSpeed?'':'ghost';x.onclick=()=>{demoSpeed=v;[...sp.children].forEach(y=>y.className='ghost');x.className=''};sp.appendChild(x)});
+  $('dm-x').onclick=stopDemo;
+  $('dm-t').onclick=()=>{b.classList.toggle('min');$('dm-t').textContent='ДЕМО-ТРАФИК '+(b.classList.contains('min')?'▸':'▾')};
+  const bars=$('dm-bars');
+  MOODS.forEach((m,i)=>{const c=document.createElement('div');c.className='bc';c.innerHTML='<div class="bb" style="background:hsl('+(i/(MOODS.length-1)*120)+',80%,55%)"></div><span>'+m+'</span>';bars.appendChild(c)});
+}
+function hud(){
+  if(!demoOn)return;
+  let tv=0,sm=0,best=null;const dist=new Array(MOODS.length).fill(0);
+  places.forEach(p=>{p.v.forEach(v=>{tv++;sm+=v;dist[v-1]++});if(p.v.length>=8){const a=avg(p);if(!best||a>best.a)best={a,p}}});
+  const now=Date.now();demoStamps=demoStamps.filter(t=>now-t<60000);
+  $('dm-p').textContent=places.length;$('dm-v').textContent=tv;
+  $('dm-a').textContent=tv?(sm/tv).toFixed(2).replace('.',','):'0';
+  $('dm-r').textContent=demoStamps.length;
+  const mx=Math.max(1,...dist);
+  [...$('dm-bars').children].forEach((c,i)=>{c.firstChild.style.height=Math.max(2,Math.round(dist[i]/mx*38))+'px'});
+  $('dm-top').textContent=best?'Лидер: '+best.p.name+' · '+best.a.toFixed(1).replace('.',',')+' из '+MOODS.length:'';
+  const f=$('dm-feed');f.textContent='';
+  demoFeed.slice(0,2).forEach(t=>{const d=document.createElement('div');d.textContent=t;f.appendChild(d)});
+}
+function demoTick(){
+  if(!demoOn||!demoList.length)return;
+  const per=demoSpeed===1?1:demoSpeed===5?3:12,touched=new Set();
+  for(let i=0;i<per;i++){
+    const p=pick(demoList);
+    if(Math.random()<.05)p._b=Math.max(1,Math.min(MOODS.length,p._b+(Math.random()-.5)*1.4));
+    const v=clMood(p._b+gz());
+    p.v.push(v);if(p.v.length>300)p.v.shift();
+    if(Math.random()<.35){const t=pick(TAGS);p.t[t]=(p.t[t]||0)+1}
+    touched.add(p);demoStamps.push(Date.now());
+    demoFeed.unshift(MOODS[v-1]+' '+p.name+' · '+p.v.length+' '+(p.v.length%10===1&&p.v.length%100!==11?'оценка':'оценок'));
+  }
+  demoFeed=demoFeed.slice(0,6);
+  touched.forEach(p=>{
+    paint(p);
+    const o=pins.get(p.id);if(o&&!o.pb_b){o.pb_b=1;o.el.pb.classList.add('blip');setTimeout(()=>{o.el.pb.classList.remove('blip');o.pb_b=0},650)}
+  });
+  if(heatOn){clearTimeout(heatT);heatT=setTimeout(drawHeat,2500)}
+  hud();
+  if(sel&&!draft&&touched.has(places.find(x=>x.id===sel))&&Date.now()-demoSheetT>2500&&!(document.activeElement&&document.activeElement.id==='rv')){demoSheetT=Date.now();drawSheet()}
+}
+function showFavs(){
+  const base=myPos||lastC||null;
+  const list=places.filter(p=>p.fav).map(p=>({kind:'fav',id:p.id,title:p.name,sub:p.addr||'',c:p.c,local:true,d:base?distM(base,p.c):null})).sort((a,b)=>(a.d||0)-(b.d||0));
+  showSug(list,'Избранное',list.length?null:'Пока пусто: откройте место и нажмите сердечко');
+}
+let heatOn=false,heatFeats=[];
+function circleRing(c,r){const n=28,dLat=r/111320,dLon=r/(111320*Math.cos(c[1]*Math.PI/180)),pts=[];for(let i=0;i<=n;i++){const a=i/n*2*Math.PI;pts.push([c[0]+dLon*Math.cos(a),c[1]+dLat*Math.sin(a)])}return pts}
+function hsl2rgba(h,sat,l,a){sat/=100;l/=100;const k=n=>(n+h/30)%12,f=n=>l-sat*Math.min(l,1-l)*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return 'rgba('+Math.round(f(0)*255)+','+Math.round(f(8)*255)+','+Math.round(f(4)*255)+','+a+')'}
+function drawHeat(){
+  if(!map||!lib||!lib.YMapFeature)return;
+  heatFeats.forEach(f=>{try{map.removeChild(f)}catch(e){}});heatFeats=[];
+  if(!heatOn)return;
+  places.forEach(p=>{
+    const a=avg(p);if(a==null)return;
+    const h=(a-1)/(MOODS.length-1)*120,r=260+Math.min(p.v.length,10)*30;
+    [[1,.14],[.62,.2],[.3,.28]].forEach(([k,al])=>{
+      try{const f=new lib.YMapFeature({geometry:{type:'Polygon',coordinates:[circleRing(p.c,r*k)]},style:{fill:hsl2rgba(h,90,55,al),stroke:[{color:'rgba(0,0,0,0)',width:0}]}});map.addChild(f);heatFeats.push(f)}catch(e){}
+    });
+  });
+}
 function paint(p){
   const o=pins.get(p.id);if(!o)return;
   const a=avg(p),best=filt?bestFor(filt):null;
@@ -222,6 +366,7 @@ function paint(p){
   o.el.style.opacity=filt&&!(p.t&&p.t[filt])?0.22:1;
   o.el.style.visibility=passMood(p)?'visible':'hidden';
   o.el.pb.classList.toggle('sel',sel===p.id);
+  o.el.pb.classList.toggle('fav',!!p.fav);
 }
 function refreshPins(){places.forEach(paint)}
 function addMarker(p){
@@ -280,23 +425,26 @@ function drawSheetRaw(){
       const p={id:String(Date.now()),c:draft,name,addr:/^(Определяю|Адрес не|Не удалось)/.test(draftAddr)?'':draftAddr,v:[pm],s:8,r:reviewText.trim()?[{m:pm,t:pt||'',x:reviewText.trim(),d:Date.now()}]:[],t:pt?{[pt]:1}:{},info:(draftInfo&&!draftInfo.busy&&(draftInfo.cat||draftInfo.hours||draftInfo.phone||draftInfo.url))?{cat:draftInfo.cat||'',hours:draftInfo.hours||'',phone:draftInfo.phone||'',url:draftInfo.url||''}:null};
       const ph=draftPhotos.slice();
       try{await Promise.all(ph.map(u=>addPhoto(p.id,u)))}catch(e){}
-      places.push(p);store.save(places);clearDraft();draftName='';draftPhotos=[];addMarker(p);select(p.id);
+      places.push(p);store.save(places);clearDraft();draftName='';draftPhotos=[];addMarker(p);if(heatOn)drawHeat();select(p.id);
     };
     return;
   }
   const p=places.find(x=>x.id===sel);
   if(!p){s.innerHTML='<div class="hint">👆 Нажмите на карту или на заведение, чтобы отметить место</div>';return}
   const a=avg(p),tags=Object.entries(p.t).sort((x,y)=>y[1]-x[1]).slice(0,3).map(x=>x[0]).join(', ');
-  s.innerHTML=`<h2></h2><div class="mut" id="ad2"></div><div id="stars" style="margin:6px 0"></div><div id="inf2" class="infbox" hidden></div><div id="pst"></div><div class="mut">${a==null?'Пока нет отметок':`Сейчас ${face(a)} ${a.toFixed(1)} из ${MOODS.length} · отметок: ${p.v.length}`}</div><div class="bar"><i style="width:${a?a/MOODS.length*100:0}%;background:${col(a)}"></i></div><div class="mut">Теги: ${tags||'пока нет'}</div><div id="ymrow" class="rowlink" style="margin-top:6px"></div><div id="revs"></div>${moodButtons()}<button class="btn" id="go2" ${pm?'':'disabled'}>Отметить настроение</button><button class="ghost del" id="rm">Удалить место</button>`;
+  s.innerHTML=`<div class="trow"><h2></h2><button id="fav" class="heart" aria-label="В избранное"></button></div><div class="mut" id="ad2"></div><div id="stars" style="margin:6px 0"></div><div id="inf2" class="infbox" hidden></div><div id="pst"></div><div class="mut">${a==null?'Пока нет отметок':`Сейчас ${face(a)} ${a.toFixed(1)} из ${MOODS.length} · отметок: ${p.v.length}`}</div><div class="bar"><i style="width:${a?a/MOODS.length*100:0}%;background:${col(a)}"></i></div><div class="mut">Теги: ${tags||'пока нет'}</div><div id="ymrow" class="rowlink" style="margin-top:6px"></div><div id="revs"></div>${moodButtons()}<button class="btn" id="go2" ${pm?'':'disabled'}>Отметить настроение</button><button class="ghost del" id="rm">Удалить место</button>`;
   s.querySelector('h2').textContent=p.name;$('ad2').textContent=p.addr?'📍 '+p.addr:'';
   if(a!=null){const sr=starsHtml(a);$('stars').innerHTML=sr.html+' <b>'+sr.r.toFixed(1).replace('.',',')+'</b> <span class="mut">· '+plr(p.v.length,'оценка','оценки','оценок')+'</span>'}
+  const heart=on=>'<svg class="ic" viewBox="0 0 24 24" style="fill:'+(on?'#ff4d6d':'none')+';stroke:'+(on?'#ff4d6d':'currentColor')+'"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>';
+  $('fav').innerHTML=heart(!!p.fav);
+  $('fav').onclick=()=>{p.fav=!p.fav;store.save(places);$('fav').innerHTML=heart(p.fav);paint(p)};
   renderInfoInto($('inf2'),p.info);
   fillPhotos();
   const ya=document.createElement('a');ya.href=ymapsUrl(p.name,p.addr||'',p.c);ya.target='_blank';ya.rel='noopener';ya.textContent='🗺 Рейтинг и отзывы в Яндекс Картах';ya.style.color='var(--acc)';$('ymrow').appendChild(ya);
   (p.r||[]).slice(-5).reverse().forEach(r=>{const d=document.createElement('div');d.className='rev';d.textContent=(MOODS[r.m-1]||'')+' '+r.x+' · '+new Date(r.d).toLocaleDateString('ru-RU');$('revs').appendChild(d)});
   bind(s);
-  $('go2').onclick=()=>{p.v.push(pm);if(p.v.length>30)p.v.shift();if(pt)p.t[pt]=(p.t[pt]||0)+1;if(reviewText.trim()){p.r=p.r||[];p.r.push({m:pm,t:pt||'',x:reviewText.trim(),d:Date.now()})}reviewText='';store.save(places);pm=null;pt=null;paint(p);drawSheet()};
-  $('rm').onclick=()=>{map.removeChild(pins.get(p.id).mk);pins.delete(p.id);places=places.filter(x=>x.id!==p.id);store.save(places);sel=null;drawSheet()};
+  $('go2').onclick=()=>{p.v.push(pm);if(p.v.length>30)p.v.shift();if(pt)p.t[pt]=(p.t[pt]||0)+1;if(reviewText.trim()){p.r=p.r||[];p.r.push({m:pm,t:pt||'',x:reviewText.trim(),d:Date.now()})}reviewText='';store.save(places);pm=null;pt=null;paint(p);if(heatOn)drawHeat();drawSheet()};
+  $('rm').onclick=()=>{map.removeChild(pins.get(p.id).mk);pins.delete(p.id);places=places.filter(x=>x.id!==p.id);store.save(places);if(heatOn)drawHeat();sel=null;drawSheet()};
 }
 
 function ymapsUrl(name,addr,c){return 'https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z=17&text='+encodeURIComponent((name||'')+(addr?', '+addr:''))}
@@ -681,8 +829,8 @@ function showSug(list,label,foot){
   list.forEach(it=>{
     if(hasOther&&!it.local&&!sepDone){sepDone=true;const g=document.createElement('div');g.className='gl';g.textContent='В других городах';b.appendChild(g)}
     const t=document.createElement('button');t.className='it';
-    const ic=document.createElement('div');ic.className='ic2'+(it.kind==='metro'?' m':'')+(it.kind==='org'?' org-'+(it.g||'other'):'');
-    ic.innerHTML=(it.kind==='org'?(ORG_ICON[it.g]||ORG_ICON.other):(KIND_ICON[it.kind]||KIND_ICON.place))+(it.hist?'<i class="ck">'+CLOCK+'</i>':'');t.appendChild(ic);
+    const ic=document.createElement('div');ic.className='ic2'+(it.kind==='metro'?' m':'')+(it.kind==='org'?' org-'+(it.g||'other'):'')+(it.kind==='fav'?' org-fav':'');
+    ic.innerHTML=(it.kind==='fav'?'<svg viewBox="0 0 24 24" style="fill:#fff;stroke:#fff"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>':(it.kind==='org'?(ORG_ICON[it.g]||ORG_ICON.other):(KIND_ICON[it.kind]||KIND_ICON.place)))+(it.hist?'<i class="ck">'+CLOCK+'</i>':'');t.appendChild(ic);
     const tx=document.createElement('div');tx.className='tx';
     const tt=document.createElement('div');tt.className='t';hl(tt,it.title,lastQ);tx.appendChild(tt);
     const lab=(it.kind==='house'||it.kind==='street')?'':(KIND_LABEL[it.kind]||'');
@@ -690,7 +838,7 @@ function showSug(list,label,foot){
     if(sub){const sd=document.createElement('div');sd.className='s';sd.textContent=sub;tx.appendChild(sd)}
     t.appendChild(tx);
     const ds=document.createElement('div');ds.className='ds';ds.textContent=it.d!=null?fmtD(it.d):'';t.appendChild(ds);
-    t.onclick=()=>it.kind==='street'?pickStreet(it):goTo(it);
+    t.onclick=()=>it.kind==='fav'?(hideSug(),select(it.id)):(it.kind==='street'?pickStreet(it):goTo(it));
     b.appendChild(t);
   });
   if(foot){const g=document.createElement('div');g.className='gl';g.style.textTransform='none';g.style.letterSpacing='0';g.style.fontFamily='inherit';g.textContent=foot;b.appendChild(g)}
@@ -798,7 +946,7 @@ async function init(){
   map.addChild(new YMapDefaultFeaturesLayer());
   if(pos)setMe(pos);
   styleOpenBtn();
-  map.addChild(new YMapListener({layer:'any',onUpdate:({location})=>{if(location&&location.center){lastC=location.center;lastZ=location.zoom}},onClick:(obj,ev)=>{if(obj&&obj.type==='marker')return;if(Date.now()-lastDismiss<900)return;if(ev&&ev.coordinates)tapPlace(ev.coordinates,obj)}}));
+  map.addChild(new YMapListener({layer:'any',onActionStart:()=>document.body.classList.add('moving'),onActionEnd:()=>document.body.classList.remove('moving'),onUpdate:({location})=>{if(location&&location.center){lastC=location.center;lastZ=location.zoom}},onClick:(obj,ev)=>{if(obj&&obj.type==='marker')return;if(Date.now()-lastDismiss<900)return;if(ev&&ev.coordinates)tapPlace(ev.coordinates,obj)}}));
   places.forEach(addMarker);
 }
 
@@ -854,7 +1002,7 @@ let lastC=null,lastZ=15;
 $('ymlink').onclick=()=>{const c=lastC||[37.618,55.751];window.open('https://yandex.ru/maps/?ll='+c[0]+'%2C'+c[1]+'&z='+Math.round(lastZ||15),'_blank','noopener')};
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSug)}
 drawChips();
-say('Версия 25 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
+say('Версия 27 · ключ '+MAP_KEY.slice(0,8)+' · загрузка карты…');
 window.addEventListener('error',e=>say('Ошибка: '+(e.message||'скрипт не загрузился')+' · ключ '+MAP_KEY.slice(0,8)));
 setTimeout(()=>{if(!map)say('Карта не ответила за 20 секунд. Ключ '+MAP_KEY.slice(0,8)+'. ymaps3 '+(typeof ymaps3==='undefined'?'не загружен':'загружен')+'. Домен: '+location.hostname)},20000);
 const s=document.createElement('script');
